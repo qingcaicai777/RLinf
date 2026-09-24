@@ -110,6 +110,7 @@ class OpenPi0Config(Pi0Config):
     rlt_mlp_ratio: float = 4.0
     rlt_image_only: bool = True
     rlt_use_mask: bool = False
+    rlt_decoder_type: str = "autoregressive"
     state_indices: list[int] | None = None
 
 
@@ -221,6 +222,7 @@ class OpenPi0ForRLActionPrediction(PI0Pytorch, BasePolicy):
                 num_layers=self.config.rlt_num_layers,
                 num_heads=self.config.rlt_num_heads,
                 mlp_ratio=self.config.rlt_mlp_ratio,
+                decoder_type=self.config.rlt_decoder_type,
             ).to(dtype=torch.bfloat16)
 
         # ===== DSRL components initialization =====

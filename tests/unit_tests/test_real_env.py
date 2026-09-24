@@ -830,6 +830,8 @@ def test_active_sample_replaces_the_policy_action():
 
     assert np.array_equal(env.stepped[0], EXPERT)
     assert np.array_equal(info["intervene_action"], EXPERT)
+    assert np.array_equal(info["human_mask"], np.ones_like(EXPERT, dtype=bool))
+    assert np.array_equal(info["pair_mask"], info["human_mask"])
 
 
 def test_inactive_device_leaves_the_policy_action_alone():
@@ -842,6 +844,132 @@ def test_inactive_device_leaves_the_policy_action_alone():
 
     assert np.array_equal(env.stepped[0], POLICY)
     assert "intervene_action" not in info
+    assert not info["human_mask"].any()
+    assert not info["pair_mask"].any()
+
+
+def test_intervention_masks_only_the_parts_controlled_by_the_operator():
+    controlled = np.array([True, True, False])
+    sample = TeleopSample(
+        action=EXPERT,
+        active=True,
+        info={"teleop_action_mask": controlled},
+    )
+
+    info = TeleopIntervention(FakeEnv(), ScriptedDevice([sample])).step(POLICY)[4]
+
+    assert np.array_equal(info["human_mask"], controlled)
+    assert np.array_equal(info["pair_mask"], controlled)
+
+
+def test_flexiv_world_delta_and_gripper_conventions_match_collector():
+    from scipy.spatial.transform import Rotation
+
+    from rlinf.envs.real.flexiv.action import (
+        apply_world_delta,
+        denormalize_gripper,
+        normalize_gripper,
+    )
+
+    pose = np.array([0.5, 0.0, 0.25, 1.0, 0.0, 0.0, 0.0])
+    delta = np.array([0.01, -0.02, 0.03, 0.0, 0.0, np.pi / 2])
+    target = apply_world_delta(pose, delta)
+
+    np.testing.assert_allclose(target[:3], pose[:3] + delta[:3])
+    np.testing.assert_allclose(
+        Rotation.from_quat([target[4], target[5], target[6], target[3]]).as_rotvec(),
+        delta[3:],
+    )
+    assert normalize_gripper(0.003, closed_m=0.003, open_m=0.060) == 0.0
+    assert denormalize_gripper(1.0, closed_m=0.003, open_m=0.060) == 0.060
+
+
+@pytest.mark.parametrize(
+    ("representation", "action_dim"),
+    [("eef_delta", 7), ("joint_absolute", 8)],
+)
+def test_flexiv_dummy_env_contract(representation, action_dim):
+    from rlinf.envs.real.flexiv.base import FlexivEnv
+
+    env = FlexivEnv(
+        {
+            "is_dummy": True,
+            "action_representation": representation,
+            "control_hz": 10000.0,
+        }
+    )
+    try:
+        observation, _ = env.reset(seed=0)
+        assert list(observation["state"]) == [
+            "arm_joint_position",
+            "gripper_position",
+        ]
+        assert env.action_space.shape == (action_dim,)
+        assert tuple(observation["frames"]) == ("main", "wrist")
+        action = np.zeros(action_dim, dtype=np.float32)
+        action[-1] = 1.0
+        _, _, _, _, info = env.step(action)
+        np.testing.assert_array_equal(info["action_receipt"], action)
+        np.testing.assert_allclose(
+            info["action_receipt_physical"][-1], 0.060, atol=1e-7
+        )
+    finally:
+        env.close()
+
+
+def test_flexiv_external_intervention_overrides_only_selected_parts():
+    from rlinf.envs.real.flexiv.base import FlexivEnv
+    from rlinf.envs.real.flexiv.intervention import FlexivInterventionDevice
+
+    class Source:
+        def __init__(self):
+            self.command = None
+
+        def poll(self, now_ns):
+            del now_ns
+            return self.command
+
+    source = Source()
+    env = TeleopIntervention(
+        FlexivEnv({"is_dummy": True, "control_hz": 10000.0}),
+        FlexivInterventionDevice(source, arm="follower"),
+    )
+    try:
+        env.reset()
+        source.command = SimpleNamespace(
+            timestamp_ns=0,
+            valid_until_ns=2**63 - 1,
+            mode="override",
+            arm="follower",
+            eef_delta=np.array([0.01, 0, 0, 0, 0, 0]),
+            gripper=np.array([0.003 + 0.25 * (0.060 - 0.003)]),
+            source="keyboard",
+        )
+        policy = np.array([0, 0.01, 0, 0, 0, 0, 1], dtype=np.float32)
+        _, _, _, _, info = env.step(policy)
+        np.testing.assert_allclose(info["action_receipt"], [0.01, 0, 0, 0, 0, 0, 0.25])
+        np.testing.assert_allclose(
+            info["action_receipt_physical"][-1],
+            0.003 + 0.25 * (0.060 - 0.003),
+            atol=1e-7,
+        )
+        assert info["frame_index"] == 0
+        assert info["human_mask"].all() and info["pair_mask"].all()
+        assert info["intervention_source"] == "keyboard"
+
+        source.command.gripper = None
+        source.command.mode = "residual"
+        _, _, _, _, info = env.step(policy)
+        np.testing.assert_allclose(info["action_receipt"], [0.01, 0.01, 0, 0, 0, 0, 1])
+        assert info["human_mask"][:6].all()
+        assert not info["human_mask"][6]
+
+        source.command.valid_until_ns = 0
+        _, _, _, _, info = env.step(policy)
+        np.testing.assert_array_equal(info["action_receipt"], policy)
+        assert not info["human_mask"].any()
+    finally:
+        env.close()
 
 
 def test_control_is_held_between_samples_then_released():

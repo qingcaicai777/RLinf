@@ -40,6 +40,7 @@ class LeRobotFrankaEEDataConfig(DataConfigFactory):
     output_action_dim: int = 7
     # Keep Pi0.5 discrete state prompts at the raw dataset state dimension.
     pad_state: bool = True
+    use_wrist_image: bool = False
 
     def generate_observations(
         image: np.ndarray, state: np.ndarray, prompt: str
@@ -55,17 +56,16 @@ class LeRobotFrankaEEDataConfig(DataConfigFactory):
     def create(
         self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig
     ) -> DataConfig:
+        repack_keys = {
+            "observation/image": "image",
+            "observation/state": "state",
+            "actions": "actions",
+            "prompt": "prompt",
+        }
+        if self.use_wrist_image:
+            repack_keys["observation/wrist_image"] = "wrist_image"
         repack_transform = _transforms.Group(
-            inputs=[
-                _transforms.RepackTransform(
-                    {
-                        "observation/image": "image",
-                        "observation/state": "state",
-                        "actions": "actions",
-                        "prompt": "prompt",
-                    }
-                )
-            ]
+            inputs=[_transforms.RepackTransform(repack_keys)]
         )
 
         data_transforms = _transforms.Group(
@@ -74,6 +74,7 @@ class LeRobotFrankaEEDataConfig(DataConfigFactory):
                     action_dim=model_config.action_dim,
                     model_type=model_config.model_type,
                     pad_state=self.pad_state,
+                    use_wrist_image=self.use_wrist_image,
                 )
             ],
             outputs=[

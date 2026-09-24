@@ -1,0 +1,2 @@
+# Flexiv RDK is a vendor-provided host dependency and must be installed separately.
+pyrealsense2>=2.55,<3

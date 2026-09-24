@@ -140,9 +140,14 @@ class Pi0Eval(EnvIO, Pi0):
             prefix_mask,
             kv_cache,
         )
-        ref_chunk = self.output_transform(
-            {"actions": model_actions, "state": observation.state}
-        )["actions"]
+        if self.rlt_cfg.rlt_normalized_actions:
+            ref_chunk = model_actions[
+                ..., : int(self.action_env_dim or model_actions.shape[-1])
+            ][:, : int(self.action_chunk or model_actions.shape[1])]
+        else:
+            ref_chunk = self.output_transform(
+                {"actions": model_actions, "state": observation.state}
+            )["actions"]
 
         raw_proprio = self._select_configured_state(env_obs["states"])
         if "maniskill" in self.config_name.lower():

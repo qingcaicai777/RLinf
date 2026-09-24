@@ -15,6 +15,7 @@
 """Datasets, batching, and the on-the-wire shapes they produce."""
 
 import copy
+import dataclasses
 import json
 import random
 import time
@@ -24,6 +25,13 @@ import pytest
 import torch
 from omegaconf import DictConfig
 
+from rlinf.algorithms.online_residual_rl import (
+    FeatureRecord,
+    OnlineResidualRLConfig,
+    TransitionAssembler,
+    UpdateBudget,
+)
+from rlinf.algorithms.online_residual_rl.learner import OnlineResidualLearner
 from rlinf.data.datasets.reasoning.dataset import ReasoningDataset
 from rlinf.data.schema.embodied_trajectory_builder import EmbodiedTrajectoryBuilder
 from rlinf.data.storage.lerobot import add_frame_to_dataset, episode_boundaries
@@ -37,6 +45,401 @@ from rlinf.utils.obs_compression import (
     is_compressed_image,
     is_compression_enabled,
 )
+
+
+def _online_feature(
+    config: OnlineResidualRLConfig, obs_id: str, frame_index: int
+) -> FeatureRecord:
+    return FeatureRecord(
+        obs_id=obs_id,
+        z=torch.zeros(config.z_dim),
+        proprio=torch.zeros(config.proprio_dim),
+        base_reference=torch.zeros(config.actor_horizon, config.action_dim),
+        committed=torch.zeros(config.inference_horizon, config.action_dim),
+        episode_id="episode-0",
+        frame_index=frame_index,
+        model_version=0,
+        config_version="test",
+    )
+
+
+def test_online_transition_defaults_pair_mask_to_human_intervention():
+    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)
+    assembler = TransitionAssembler(config)
+    feature = _online_feature(config, "obs-0", 0)
+    next_feature = _online_feature(config, "obs-12", config.td_horizon)
+    proposal = torch.zeros(config.actor_horizon, config.action_dim)
+    executed = proposal.clone()
+    human_mask = torch.zeros_like(proposal, dtype=torch.bool)
+    human_mask[7, :6] = True
+    executed[human_mask] = 0.25
+    assembler.begin(feature, proposal)
+
+    transition = assembler.complete(
+        feature.obs_id,
+        executed=executed,
+        rewards=torch.zeros(config.td_horizon),
+        terminal=False,
+        valid_len=config.td_horizon,
+        next_feature=next_feature,
+        human_mask=human_mask,
+    )
+
+    assert transition.correction is not None
+    assert torch.equal(transition.correction.human_mask, human_mask)
+    assert torch.equal(transition.correction.pair_mask, human_mask)
+    torch.testing.assert_close(transition.correction.proposal(executed), proposal)
+    assert transition.relative_q_eligible
+
+
+def test_online_receipts_persist_real_action_and_sparse_intervention(tmp_path):
+    from rlinf.algorithms.online_residual_rl.replay import EpisodeReplay
+
+    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)
+    feature = _online_feature(config, "obs-0", 0)
+    feature = dataclasses.replace(
+        feature,
+        committed=torch.full_like(feature.committed, 0.2),
+    )
+    proposal = torch.full((config.actor_horizon, config.action_dim), 0.3)
+    proposal[: config.inference_horizon] = feature.committed
+    assembler = TransitionAssembler(config)
+    assembler.begin(feature, proposal)
+    infos = []
+    for frame in range(config.td_horizon):
+        physical = torch.full((config.action_dim,), 0.1 if frame < 6 else 0.15)
+        mask = torch.zeros(config.action_dim, dtype=torch.bool)
+        if frame == 7:
+            physical[:6] = 0.25
+            mask[:6] = True
+        infos.append(
+            {
+                "frame_index": frame,
+                "action_receipt": torch.full((config.action_dim,), -99.0),
+                "action_receipt_physical": physical,
+                "human_mask": mask,
+                "pair_mask": mask.clone(),
+            }
+        )
+    row = assembler.complete_from_receipts(
+        feature.obs_id,
+        step_infos=infos,
+        encode_actions=lambda actions: actions * 2,
+        terminal=True,
+        next_feature=None,
+    )
+    torch.testing.assert_close(row.executed[:6], feature.committed)
+    torch.testing.assert_close(row.executed[7, :6], torch.full((6,), 0.5))
+    assert row.correction.human_mask[7, :6].all()
+    assert not row.correction.pair_mask[:6].any()
+    torch.testing.assert_close(row.correction.proposal_values, torch.full((6,), 0.3))
+
+    replay = EpisodeReplay(config, storage_dir=tmp_path)
+    assert replay.commit_episode([row], success=True, terminal_frame=11) == 1
+    saved = replay.store.load_episode(feature.episode_id)
+    assert set(saved["features"]) == {feature.obs_id}
+    assert saved["transitions"][0]["obs_id"] == feature.obs_id
+    assert saved["transitions"][0]["correction_id"] == feature.obs_id
+    torch.testing.assert_close(saved["transitions"][0]["exec"], row.executed)
+    torch.testing.assert_close(
+        saved["corrections"][feature.obs_id]["proposal_values"],
+        row.correction.proposal_values,
+    )
+    assert saved["transitions"][0]["return"].item() == pytest.approx(0.99**11)
+    assert len(list(tmp_path.glob("*.pt"))) == 1
+
+
+def test_online_receipts_reject_missing_frame_or_committed_mismatch():
+    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)
+    feature = _online_feature(config, "obs-0", 0)
+    proposal = torch.zeros(config.actor_horizon, config.action_dim)
+    assembler = TransitionAssembler(config)
+    assembler.begin(feature, proposal)
+    infos = [
+        {"frame_index": i, "action_receipt": torch.zeros(config.action_dim)}
+        for i in range(config.td_horizon)
+    ]
+    infos[4]["frame_index"] = 5
+    with pytest.raises(ValueError, match="consecutive"):
+        assembler.complete_from_receipts(
+            feature.obs_id,
+            step_infos=infos,
+            encode_actions=lambda values: values,
+            terminal=True,
+            next_feature=None,
+        )
+    infos[4]["frame_index"] = 4
+    infos[0]["action_receipt_physical"] = torch.ones(config.action_dim)
+    with pytest.raises(ValueError, match="committed prefix"):
+        assembler.complete_from_receipts(
+            feature.obs_id,
+            step_infos=infos,
+            encode_actions=lambda values: values,
+            terminal=True,
+            next_feature=None,
+        )
+
+
+def test_online_update_budget_stops_without_new_transitions():
+    budget = UpdateBudget(critic_per_transition=5, critic_per_actor=5)
+    budget.add_transitions(2)
+
+    critic_updates = 0
+    actor_updates = 0
+    while budget.take_critic():
+        critic_updates += 1
+        actor_updates += int(budget.take_actor())
+
+    assert (critic_updates, actor_updates) == (10, 2)
+    assert not budget.take_critic()
+
+
+def test_online_replay_rejects_invalid_schedule_and_unexecuted_decision():
+    config = OnlineResidualRLConfig(z_dim=4, hidden_dim=8)
+    assembler = TransitionAssembler(config)
+    feature = _online_feature(config, "pending", 0)
+    action = torch.zeros(config.actor_horizon, config.action_dim)
+    assembler.begin(feature, action)
+    kwargs = {
+        "executed": action,
+        "rewards": torch.zeros(config.td_horizon),
+        "terminal": True,
+        "next_feature": None,
+    }
+    with pytest.raises(ValueError, match="Scheduling-invalid"):
+        assembler.complete("pending", valid_len=12, schedule_valid=False, **kwargs)
+    with pytest.raises(ValueError, match="execution must have started"):
+        assembler.complete("pending", valid_len=6, **kwargs)
+    row = assembler.complete(
+        "pending",
+        valid_len=8,
+        human_mask=torch.ones_like(action, dtype=torch.bool),
+        **kwargs,
+    )
+    assert row.correction.human_mask[:8].all()
+    assert not row.correction.human_mask[8:].any()
+    assert not row.correction.pair_mask[:6].any()
+    assert row.correction.pair_mask[6:8].all()
+
+
+def test_online_bc_averages_samples_not_intervention_elements():
+    from rlinf.algorithms.online_residual_rl.losses import behavior_cloning_losses
+
+    actions = torch.zeros(2, 12, 7)
+    targets = torch.ones_like(actions)
+    targets[1] = 3
+    human = torch.zeros_like(actions, dtype=torch.bool)
+    human[0, 6, 0] = True
+    human[1, 6:, :] = True
+    ordinary, corrected = behavior_cloning_losses(
+        actions, actions, targets, valid_mask=torch.ones_like(human), human_mask=human
+    )
+    assert ordinary.item() == 0
+    assert corrected.item() == 5  # Mean of per-sample MSEs 1 and 9.
+
+
+def test_online_residual_learner_updates_actor_and_critics():
+    config = OnlineResidualRLConfig(
+        z_dim=4,
+        hidden_dim=8,
+        inference_horizon=2,
+        actor_horizon=4,
+        td_horizon=4,
+        critic_updates_per_transition=1,
+        critic_updates_per_actor_update=1,
+    )
+    learner = OnlineResidualLearner(config, action_projector=lambda value: value)
+    feature = _online_feature(config, "row", 0)
+    assembler = TransitionAssembler(config)
+    proposal = torch.zeros(config.actor_horizon, config.action_dim)
+    assembler.begin(feature, proposal)
+    transition = assembler.complete(
+        feature.obs_id,
+        executed=torch.zeros_like(proposal),
+        rewards=torch.ones(config.td_horizon),
+        terminal=True,
+        valid_len=config.td_horizon,
+        next_feature=None,
+        human_mask=torch.zeros_like(proposal, dtype=torch.bool),
+        pair_mask=torch.zeros_like(proposal, dtype=torch.bool),
+    )
+    critic_metrics = learner.critic_step([transition])
+    actor_metrics = learner.actor_step([transition])
+    assert {"critic/td", "critic/rank"} <= set(critic_metrics.values)
+    assert {"actor/total", "actor/ordinary_bc"} <= set(actor_metrics.values)
+    assert all(torch.isfinite(value).all() for value in learner.actor.parameters())
+
+
+def test_online_replay_training_credit_and_checkpoint(tmp_path):
+    from rlinf.algorithms.online_residual_rl.replay import EpisodeReplay
+    from rlinf.algorithms.online_residual_rl.training import OnlineTraining
+
+    cfg = OnlineResidualRLConfig(z_dim=4, hidden_dim=8)
+    assembler = TransitionAssembler(cfg)
+    feature = _online_feature(cfg, "terminal", 0)
+    actions = torch.zeros(cfg.actor_horizon, cfg.action_dim)
+    assembler.begin(feature, actions)
+    row = assembler.complete(
+        feature.obs_id,
+        executed=actions,
+        rewards=torch.zeros(cfg.td_horizon),
+        terminal=True,
+        valid_len=12,
+        next_feature=None,
+    )
+    replay = EpisodeReplay(cfg)
+    learner = OnlineResidualLearner(cfg, action_projector=lambda value: value)
+    loop = OnlineTraining(
+        learner,
+        replay,
+        initial_episodes=1,
+        warmup_updates=0,
+        td_batch_size=2,
+        supervision_batch_size=2,
+    )
+    assert loop.commit_episode([row], success=True, terminal_frame=11) == 1
+    assert loop.commit_episode([row], success=True, terminal_frame=11) == 0
+    saved_row = replay.sample(1)[0]
+    assert saved_row.rewards.sum().item() == 1
+    torch.testing.assert_close(saved_row.discounted_return, torch.tensor([0.99**11]))
+    # A terminal-only batch must not invoke either successor network.
+    with mock.patch.object(
+        learner.target_actor, "forward", side_effect=AssertionError("bootstrap")
+    ):
+        for _ in range(5):
+            assert "critic/td" in loop.step()
+    assert loop.actor_updates == 1
+    assert loop.step() == {}
+    checkpoint = tmp_path / "resume.pt"
+    loop.save(checkpoint)
+    restored = OnlineTraining(
+        OnlineResidualLearner(cfg, action_projector=lambda value: value),
+        EpisodeReplay(cfg),
+        initial_episodes=1,
+        warmup_updates=0,
+    )
+    restored.load(checkpoint)
+    assert restored.actor_updates == 1
+    assert restored.step() == {}
+    assert restored.commit_episode([row], success=True, terminal_frame=11) == 0
+
+
+def test_online_fixed_handoff_rejects_early_switch_and_late_result():
+    from rlinf.algorithms.online_residual_rl.scheduling import HandoffSchedule
+
+    config = OnlineResidualRLConfig()
+    schedule = HandoffSchedule(config)
+    queue = torch.zeros(6, 7)
+    schedule.recover(queue)
+    first = schedule.begin(0, 4)
+    queue.fill_(99)
+    assert first.committed.count_nonzero() == 0
+    assert schedule.submit(first.sequence, torch.ones(6, 7), completed_frame=3)
+    with pytest.raises(ValueError, match="Early"):
+        schedule.handoff(3)
+    torch.testing.assert_close(schedule.handoff(6), torch.ones(6, 7))
+    second = schedule.begin(6, 5)
+    assert not schedule.submit(second.sequence, torch.zeros(6, 7), completed_frame=13)
+    assert schedule.handoff(12) is None
+    assert schedule.recovering
+    assert not schedule.submit(first.sequence, torch.ones(6, 7), completed_frame=12)
+
+
+def test_online_action_projection_uses_physical_limits():
+    from rlinf.algorithms.online_residual_rl.action_mapping import ActionMapping
+
+    mapping = ActionMapping([0.0, 0.5], [0.1, 0.5], [-0.02, 0.0], [0.02, 1.0])
+    actions = torch.tensor([[0.5, 3.0]], requires_grad=True)
+    projected = mapping(actions)
+    torch.testing.assert_close(mapping.decode(projected), torch.tensor([[0.02, 1.0]]))
+    projected.sum().backward()
+    assert actions.grad is not None
+
+
+def test_flexiv_norm_batches_apply_training_delta_and_preserve_gripper(tmp_path):
+    import numpy as np
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from toolkits.lerobot.calculate_flexiv_norm_stats import iter_numeric_batches
+
+    (tmp_path / "meta").mkdir()
+    (tmp_path / "data").mkdir()
+    metadata = {
+        "recorded_arm_names": ["left"],
+        "action_representation": "eef_absolute",
+        "total_frames": 3,
+        "features": {
+            "observation.eef_state": {"shape": [6]},
+            "observation.joint_state": {"shape": [7]},
+            "observation.gripper_state": {"shape": [1]},
+            "action": {"shape": [7]},
+        },
+    }
+    info = tmp_path / "meta" / "info.json"
+    info.write_text(json.dumps(metadata))
+    pq.write_table(
+        pa.table(
+            {
+                "observation.eef_state": [
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [2.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                ],
+                "observation.joint_state": [[0.0] * 7] * 3,
+                "observation.gripper_state": [[0.060]] * 3,
+                "action": [
+                    [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.003],
+                    [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.004],
+                    [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.005],
+                ],
+            }
+        ),
+        tmp_path / "data" / "episode_000000.parquet",
+    )
+    batches = list(iter_numeric_batches(tmp_path, batch_size=2, action_horizon=2))
+    assert [len(batch["state"]) for batch in batches] == [2, 1]
+    assert batches[0]["state"].shape == (2, 8)
+    assert batches[0]["actions"].shape == (2, 2, 32)
+    assert batches[0]["state"][0, -1] == 0.060
+    assert batches[0]["actions"][0, 0, 6] == 0.003
+    np.testing.assert_allclose(batches[0]["actions"][:, :, 0], [[1.0, 2.0], [1.0, 2.0]])
+    np.testing.assert_allclose(batches[1]["actions"][:, :, 0], [[1.0, 1.0]])
+    np.testing.assert_allclose(batches[0]["actions"][..., 7:], 0.0)
+
+    metadata["action_representation"] = "eef_delta"
+    info.write_text(json.dumps(metadata))
+    with pytest.raises(ValueError, match="absolute TCP source"):
+        list(iter_numeric_batches(tmp_path))
+
+
+def test_flexiv_tcp_delta_is_world_frame_and_keeps_absolute_gripper():
+    import numpy as np
+
+    from rlinf.data.datasets.openpi_rlinf.flexiv.flexiv_sft_dataset import (
+        absolute_tcp_chunk_to_world_delta,
+        future_action_indices,
+    )
+
+    reference = np.array([1.0, 2.0, 3.0, 0.0, 0.0, np.pi / 2])
+    targets = np.array(
+        [
+            [2.0, 4.0, 6.0, 0.0, 0.0, np.pi, 0.06],
+            [0.0, 2.0, 3.0, 0.0, 0.0, 0.0, 0.01],
+        ]
+    )
+    delta = absolute_tcp_chunk_to_world_delta(reference, targets)
+
+    np.testing.assert_allclose(delta[:, :3], [[1.0, 2.0, 3.0], [-1.0, 0.0, 0.0]])
+    np.testing.assert_allclose(
+        delta[:, 3:6],
+        [[0.0, 0.0, np.pi / 2], [0.0, 0.0, -np.pi / 2]],
+    )
+    np.testing.assert_allclose(delta[:, 6], [0.06, 0.01])
+    np.testing.assert_array_equal(
+        future_action_indices(3, 4),
+        [[0, 1, 2, 2], [1, 2, 2, 2], [2, 2, 2, 2]],
+    )
 
 
 class TestMathDatasetMultithread:

@@ -109,7 +109,7 @@ NO_INSTALL_RLINF_CMD="--no-install-project"
 SUPPORTED_TARGETS=("embodied" "agentic" "docs")
 SUPPORTED_ENGINES=("sglang" "vllm")
 SUPPORTED_MODELS=("openvla" "openvla-oft" "openpi" "gr00t" "gr00t_n1d6" "gr00t_n1d7" "dexbotic" "starvla" "lingbotvla" "dreamzero" "fastwam" "cosmos3" "qwen3_vl" "abot_m0" "molmoact2" "evo1" "diffusion")
-SUPPORTED_ENVS=("behavior" "maniskill_libero" "libero" "metaworld" "calvin" "isaaclab" "robocasa" "robocasa365" "franka" "franka-ros" "frankasim" "robotwin" "habitat" "opensora" "wan" "genesis" "xsquare_turtle2" "liberopro" "liberoplus" "roboverse" "embodichain" "d4rl" "dosw1" "gim_arm" "so101" "piper" "dummy" "polaris")
+SUPPORTED_ENVS=("behavior" "maniskill_libero" "libero" "metaworld" "calvin" "isaaclab" "robocasa" "robocasa365" "franka" "franka-ros" "frankasim" "flexiv" "robotwin" "habitat" "opensora" "wan" "genesis" "xsquare_turtle2" "liberopro" "liberoplus" "roboverse" "embodichain" "d4rl" "dosw1" "gim_arm" "so101" "piper" "dummy" "polaris")
 
 #=======================Utility Functions=======================
 
@@ -2326,6 +2326,19 @@ install_openpi_model() {
             uv pip install "rlinf-openpi==0.1.1"
             install_flash_attn
             ;;
+        flexiv)
+            create_and_sync_venv
+            install_common_embodied_deps
+            uv pip install "rlinf-openpi==0.1.1"
+            if [ -z "${OPENPI_RTC_PATH:-}" ] || [ ! -f "$OPENPI_RTC_PATH/pyproject.toml" ]; then
+                echo "[flexiv] OPENPI_RTC_PATH must point to an RTC-compatible OpenPI checkout." >&2
+                exit 1
+            fi
+            uv pip uninstall rlinf-openpi
+            uv pip install -e "$OPENPI_RTC_PATH" --no-deps
+            install_flash_attn
+            install_flexiv_env
+            ;;
         polaris)
             create_and_sync_venv
             install_common_embodied_deps
@@ -2849,7 +2862,7 @@ install_env_only() {
     # A robot host trains in its env venv, so it takes the same embodied extra,
     # training dependencies and system libraries as a model install.
     case "$ENV_NAME" in
-        franka|franka-ros|so101|piper|dosw1|gim_arm|xsquare_turtle2)
+        franka|franka-ros|flexiv|so101|piper|dosw1|gim_arm|xsquare_turtle2)
             install_common_embodied_deps
             ;;
     esac
@@ -2865,6 +2878,9 @@ install_env_only() {
             ;;
         franka-ros)
             install_franka_ros_realworld_env
+            ;;
+        flexiv)
+            install_flexiv_env
             ;;
         xsquare_turtle2)
             install_xsquare_turtle2_env
@@ -3345,6 +3361,14 @@ install_xsquare_turtle2_env() {
 
 install_gim_arm_env() {
     uv pip install -r "$SCRIPT_DIR/embodied/envs/gim_arm.txt"
+}
+
+install_flexiv_env() {
+    uv pip install -r "$SCRIPT_DIR/embodied/envs/flexiv.txt"
+    if ! python -c "import flexivrdk" >/dev/null 2>&1; then
+        echo "[flexiv] WARNING: Flexiv RDK Python bindings are not importable." >&2
+        echo "[flexiv] Install the vendor RDK on the robot host before inference." >&2
+    fi
 }
 
 install_robotwin_env() {

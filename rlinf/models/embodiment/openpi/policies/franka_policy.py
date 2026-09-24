@@ -75,6 +75,7 @@ class FrankaEEInputs(transforms.DataTransformFn):
     # Do not change this for your own dataset.
     model_type: _model.ModelType = _model.ModelType.PI0
     pad_state: bool = True
+    use_wrist_image: bool = False
 
     def __call__(self, data: dict) -> dict:
         if isinstance(data["observation/state"], np.ndarray):
@@ -108,6 +109,11 @@ class FrankaEEInputs(transforms.DataTransformFn):
             image_masks = (np.True_, np.True_, np.True_)  # without padding
         else:
             raise ValueError(f"Unsupported model type: {self.model_type}")
+
+        if self.use_wrist_image:
+            wrist = _parse_image(data["observation/wrist_image"])
+            images = (base_image, wrist, np.zeros_like(base_image))
+            image_masks = (np.True_, np.True_, np.False_)
 
         inputs = {
             "state": state,

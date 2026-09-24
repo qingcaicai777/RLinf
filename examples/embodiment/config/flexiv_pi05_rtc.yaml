@@ -1,0 +1,73 @@
+policy:
+  config_name: "pi05_flexiv_rtc"
+  checkpoint_path: "/path/to/standard_openpi_jax_sft_checkpoint"
+  prompt: "complete the configured Flexiv manipulation task"
+  state_key: "observation/state"
+  camera_keys:
+    main: "observation/image"
+    wrist: "observation/wrist_image"
+
+rtc:
+  action_horizon: 12
+  execution_horizon: 6
+  initial_delay: 1
+  delay_history_length: 8
+  max_guidance_weight: 5.0
+  num_steps: 10
+  late_chunk_behavior: "hold"
+
+control:
+  frequency_hz: 30.0
+  max_ticks: null
+  translation_unit: "m"
+  rotation_representation: "rotvec"
+  rotation_unit: "rad"
+  tcp_delta_frame: "world"
+  translation_delta_limit_m: 0.02
+  rotation_delta_limit_rad: 0.10
+  # The compact Flexiv dataset stores measured and commanded width in metres.
+  gripper_state_range: [0.003, 0.060]
+  gripper_command_range: [0.003, 0.060]
+  gripper_state_open_at_max: true
+  gripper_command_open_at_max: true
+
+flexiv:
+  arm: "REPLACE_WITH_LEFT_OR_RIGHT"
+  is_dummy: false
+  task_description: "complete the configured Flexiv manipulation task"
+  serial_number: "REPLACE_WITH_FLEXIV_SERIAL"
+  gripper_name: "Flexiv-GN01"
+  action_representation: "eef_delta"
+  control_hz: 30.0
+  max_num_steps: 300
+  gripper_open_width_m: 0.060
+  gripper_close_width_m: 0.003
+  gripper_velocity_m_s: 0.05
+  gripper_force_n: 20.0
+  max_linear_velocity_m_s: 0.06
+  max_angular_velocity_rad_s: 0.20
+  max_linear_acceleration_m_s2: 0.15
+  max_angular_acceleration_rad_s2: 0.45
+  max_translation_delta_m: 0.02
+  max_rotation_delta_rad: 0.10
+  cameras:
+    main:
+      serial_number: "REPLACE_WITH_MAIN_CAMERA_SERIAL"
+      width: 640
+      height: 480
+      fps: 30
+      crop_width: 224
+      crop_height: 224
+      crop_offset_x: -50
+      crop_offset_y: 40
+    wrist:
+      serial_number: "REPLACE_WITH_WRIST_CAMERA_SERIAL"
+      width: 640
+      height: 480
+      fps: 30
+      crop_width: 480
+      crop_height: 480
+      crop_offset_x: 20
+      crop_offset_y: 0
+      resize_width: 224
+      resize_height: 224

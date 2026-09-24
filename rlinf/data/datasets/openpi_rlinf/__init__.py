@@ -35,6 +35,14 @@ def _load_dual_franka_sft_dataloader() -> SftDataLoaderBuilder:
     return build_dual_franka_sft_dataloader
 
 
+def _load_flexiv_sft_dataloader() -> SftDataLoaderBuilder:
+    from rlinf.data.datasets.openpi_rlinf.flexiv import (
+        build_flexiv_sft_dataloader,
+    )
+
+    return build_flexiv_sft_dataloader
+
+
 def _load_official_openpi_sft_dataloader() -> SftDataLoaderBuilder:
     from rlinf.data.datasets.openpi_rlinf.official_sft_data_loader import (
         build_official_openpi_sft_dataloader,
@@ -47,6 +55,7 @@ def _load_official_openpi_sft_dataloader() -> SftDataLoaderBuilder:
 _SFT_DATALOADER_BUILDERS = {
     "behavior": _load_behavior_sft_dataloader,
     "dualfranka": _load_dual_franka_sft_dataloader,
+    "flexiv": _load_flexiv_sft_dataloader,
     "robotwin": _load_official_openpi_sft_dataloader,
 }
 
@@ -70,12 +79,17 @@ def build_openpi_rlinf_sft_dataloader(
     eval_dataset: bool = False,
 ) -> tuple[Any, Any]:
     """Build the environment-specific openpi_rlinf SFT dataloader."""
+    config_name = str(cfg.actor.model.openpi.config_name)
+    if "flexiv" in config_name:
+        return _load_flexiv_sft_dataloader()(
+            cfg, world_size, rank, data_paths, eval_dataset
+        )
     if bool(cfg.actor.model.openpi.get("use_rlt", False)):
         return _load_official_openpi_sft_dataloader()(
             cfg, world_size, rank, data_paths, eval_dataset
         )
 
-    env_type = _resolve_env(str(cfg.actor.model.openpi.config_name))
+    env_type = _resolve_env(config_name)
     builder = _SFT_DATALOADER_BUILDERS[env_type]()
     return builder(cfg, world_size, rank, data_paths, eval_dataset)
 

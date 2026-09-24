@@ -358,6 +358,11 @@ class RealWorldEnv(gym.Env):
                     intervene_action[env_id] = env_intervene_action.copy()
         infos["intervene_action"] = to_tensor(intervene_action)
         infos["intervene_flag"] = to_tensor(intervene_flag)
+        for mask_name in ("human_mask", "pair_mask"):
+            if mask_name in infos:
+                infos[mask_name] = to_tensor(
+                    np.asarray(infos[mask_name], dtype=bool)
+                )
         if "rlt_switch_flags" in infos:
             infos["rlt_switch_flags"] = to_tensor(
                 np.asarray(infos["rlt_switch_flags"], dtype=bool)
@@ -398,6 +403,8 @@ class RealWorldEnv(gym.Env):
 
         raw_chunk_intervene_actions = []
         raw_chunk_intervene_flag = []
+        raw_chunk_human_masks = []
+        raw_chunk_pair_masks = []
         raw_chunk_rlt_switch_flags = []
         self._notify_action_chunk_begin()
         for i in range(chunk_size):
@@ -410,6 +417,10 @@ class RealWorldEnv(gym.Env):
             if "intervene_action" in infos:
                 raw_chunk_intervene_actions.append(infos["intervene_action"])
                 raw_chunk_intervene_flag.append(infos["intervene_flag"])
+            if "human_mask" in infos:
+                raw_chunk_human_masks.append(infos["human_mask"])
+            if "pair_mask" in infos:
+                raw_chunk_pair_masks.append(infos["pair_mask"])
             if "rlt_switch_flags" in infos:
                 raw_chunk_rlt_switch_flags.append(infos["rlt_switch_flags"])
 
@@ -435,6 +446,12 @@ class RealWorldEnv(gym.Env):
                 raw_chunk_intervene_actions, dim=1
             ).reshape(self.num_envs, -1)
             infos_last["intervene_flag"] = torch.stack(raw_chunk_intervene_flag, dim=1)
+            infos_list[-1] = infos_last
+        if raw_chunk_human_masks:
+            infos_last["human_mask"] = torch.stack(raw_chunk_human_masks, dim=1)
+            infos_list[-1] = infos_last
+        if raw_chunk_pair_masks:
+            infos_last["pair_mask"] = torch.stack(raw_chunk_pair_masks, dim=1)
             infos_list[-1] = infos_last
         if raw_chunk_rlt_switch_flags:
             infos_last["rlt_switch_flags"] = torch.stack(

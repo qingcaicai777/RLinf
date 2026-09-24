@@ -149,11 +149,23 @@ class TeleopIntervention(gym.Wrapper):
 
         obs, reward, terminated, truncated, info = self.env.step(applied)
 
+        intervention_mask = np.zeros(np.asarray(applied).shape, dtype=bool)
         if overridden:
             info["intervene_action"] = applied
+            controlled = sample.info.get("teleop_action_mask")
+            if controlled is None:
+                controlled = np.ones(np.asarray(applied).shape, dtype=bool)
+            intervention_mask = np.asarray(controlled, dtype=bool).reshape(
+                np.asarray(applied).shape
+            )
             if self.mark_flag:
                 info["intervene_flag"] = np.ones(1)
         info.update(sample.info)
+        # Online residual replay treats all operator-controlled entries as both
+        # imitation targets and trustworthy preference pairs by default.
+        # Callers may narrow pair_mask before committing replay.
+        info["human_mask"] = intervention_mask.copy()
+        info["pair_mask"] = intervention_mask.copy()
 
         return obs, reward, terminated, truncated, info
 

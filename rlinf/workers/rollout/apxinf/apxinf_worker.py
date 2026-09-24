@@ -55,6 +55,7 @@ class ApxInfRolloutWorker(Worker):
 
     def init_worker(self) -> None:
         from rlinf.models.embodiment.openpi.apxinf_adapter import (
+            OnlineResidualApxInfAdapter,
             OpenPIApxInfAdapter,
         )
 
@@ -64,10 +65,12 @@ class ApxInfRolloutWorker(Worker):
             if isinstance(current_device, int)
             else str(current_device)
         )
-        self.apxinf_adapter = OpenPIApxInfAdapter(
-            self.model_cfg,
-            device,
+        adapter_cls = (
+            OnlineResidualApxInfAdapter
+            if bool(self.model_cfg.get("online_residual", {}).get("enabled", False))
+            else OpenPIApxInfAdapter
         )
+        self.apxinf_adapter = adapter_cls(self.model_cfg, device)
         self.log_info(
             "ApxInf policy loaded: "
             f"device={device}, metadata={dict(self.apxinf_adapter.metadata)}"
@@ -99,7 +102,15 @@ class ApxInfRolloutWorker(Worker):
         return {"obs": merged, "reset": reset}
 
     def predict(self, env_obs: dict[str, Any]) -> torch.Tensor:
-        actions, _ = self.apxinf_adapter.predict_action_batch(env_obs, mode="eval")
+        if bool(self.model_cfg.get("online_residual", {}).get("enabled", False)):
+            committed = env_obs.get("committed")
+            actions, _ = self.apxinf_adapter.predict_action_batch(
+                env_obs,
+                mode="eval",
+                committed=None if committed is None else torch.as_tensor(committed),
+            )
+        else:
+            actions, _ = self.apxinf_adapter.predict_action_batch(env_obs, mode="eval")
         return actions.detach().cpu().contiguous()
 
     async def evaluate(self, input_channel, output_channel):

@@ -605,6 +605,7 @@ class Pi0(model.BaseModel):
                 num_layers=self.rlt_cfg.rlt_num_layers,
                 num_heads=self.rlt_cfg.rlt_num_heads,
                 mlp_ratio=self.rlt_cfg.rlt_mlp_ratio,
+                decoder_type=self.rlt_cfg.rlt_decoder_type,
             ).to(dtype=next(self.parameters()).dtype)
         self._mark_fsdp_wrap_names()
 

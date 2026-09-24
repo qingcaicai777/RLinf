@@ -1,0 +1,2122 @@
+[1mdiff --git a/docs/source-en/rst_source/examples/real_world_index.rst b/docs/source-en/rst_source/examples/real_world_index.rst[m
+[1mindex d6df68cd..08faa773 100644[m
+[1m--- a/docs/source-en/rst_source/examples/real_world_index.rst[m
+[1m+++ b/docs/source-en/rst_source/examples/real_world_index.rst[m
+[36m@@ -1,7 +1,7 @@[m
+ RL with Real-World Robots[m
+ =========================[m
+ [m
+[31m-Use this section when your starting point is physical robot hardware. Start with Franka if you use a Franka arm or a Franka-based rig; use the other robot pages for GimArm, XSquare Turtle2, Dexmal DOS-W1, AgileX Piper, and SO101.[m
+[32m+[m[32mUse this section when your starting point is physical robot hardware. Start with Franka if you use a Franka arm or a Franka-based rig; use the other robot pages for Flexiv, GimArm, XSquare Turtle2, Dexmal DOS-W1, AgileX Piper, and SO101.[m
+ [m
+ Choose a guide for hardware checks, teleoperation, data collection, sim-to-real transfer, deployment, or online RL.[m
+ [m
+[36m@@ -93,3 +93,4 @@[m [mUse these guides to connect an arm and run its hardware test script. Piper and S[m
+    DOS-W1 <embodied/dosw1>[m
+    Piper <embodied/piper>[m
+    SO101 <embodied/so101>[m
+[32m+[m[32m   Flexiv PI0.5 RTC <embodied/flexiv_pi05_rtc>[m
+[1mdiff --git a/docs/source-zh/rst_source/examples/real_world_index.rst b/docs/source-zh/rst_source/examples/real_world_index.rst[m
+[1mindex de0bdbc7..9a3227c9 100644[m
+[1m--- a/docs/source-zh/rst_source/examples/real_world_index.rst[m
+[1m+++ b/docs/source-zh/rst_source/examples/real_world_index.rst[m
+[36m@@ -1,7 +1,7 @@[m
+ 真实机器人强化学习[m
+ ========================================[m
+ [m
+[31m-按机器人硬件选择配置与使用指南。Franka 机械臂及其组合设备请从 Franka 页面开始；GimArm、XSquare Turtle2、Dexmal DOS-W1、AgileX Piper 和 SO101 请进入对应页面。[m
+[32m+[m[32m按机器人硬件选择配置与使用指南。Franka 机械臂及其组合设备请从 Franka 页面开始；Flexiv、GimArm、XSquare Turtle2、Dexmal DOS-W1、AgileX Piper 和 SO101 请进入对应页面。[m
+ [m
+ 根据硬件检查、遥操作、数据采集、Sim-to-Real 迁移、部署或在线 RL 的需求，选择相应指南。[m
+ [m
+[36m@@ -93,3 +93,4 @@[m [mPiper 与 SO101 配置[m
+    DOS-W1 <embodied/dosw1>[m
+    Piper <embodied/piper>[m
+    SO101 <embodied/so101>[m
+[32m+[m[32m   Flexiv PI0.5 RTC <embodied/flexiv_pi05_rtc>[m
+[1mdiff --git a/requirements/install.sh b/requirements/install.sh[m
+[1mindex f6987c2a..cb97cdab 100755[m
+[1m--- a/requirements/install.sh[m
+[1m+++ b/requirements/install.sh[m
+[36m@@ -109,7 +109,7 @@[m [mNO_INSTALL_RLINF_CMD="--no-install-project"[m
+ SUPPORTED_TARGETS=("embodied" "agentic" "docs")[m
+ SUPPORTED_ENGINES=("sglang" "vllm")[m
+ SUPPORTED_MODELS=("openvla" "openvla-oft" "openpi" "gr00t" "gr00t_n1d6" "gr00t_n1d7" "dexbotic" "starvla" "lingbotvla" "dreamzero" "fastwam" "cosmos3" "qwen3_vl" "abot_m0" "molmoact2" "evo1" "diffusion")[m
+[31m-SUPPORTED_ENVS=("behavior" "maniskill_libero" "libero" "metaworld" "calvin" "isaaclab" "robocasa" "robocasa365" "franka" "franka-ros" "frankasim" "robotwin" "habitat" "opensora" "wan" "genesis" "xsquare_turtle2" "liberopro" "liberoplus" "roboverse" "embodichain" "d4rl" "dosw1" "gim_arm" "so101" "piper" "dummy" "polaris")[m
+[32m+[m[32mSUPPORTED_ENVS=("behavior" "maniskill_libero" "libero" "metaworld" "calvin" "isaaclab" "robocasa" "robocasa365" "franka" "franka-ros" "frankasim" "flexiv" "robotwin" "habitat" "opensora" "wan" "genesis" "xsquare_turtle2" "liberopro" "liberoplus" "roboverse" "embodichain" "d4rl" "dosw1" "gim_arm" "so101" "piper" "dummy" "polaris")[m
+ [m
+ #=======================Utility Functions=======================[m
+ [m
+[36m@@ -2326,6 +2326,19 @@[m [minstall_openpi_model() {[m
+             uv pip install "rlinf-openpi==0.1.1"[m
+             install_flash_attn[m
+             ;;[m
+[32m+[m[32m        flexiv)[m
+[32m+[m[32m            create_and_sync_venv[m
+[32m+[m[32m            install_common_embodied_deps[m
+[32m+[m[32m            uv pip install "rlinf-openpi==0.1.1"[m
+[32m+[m[32m            if [ -z "${OPENPI_RTC_PATH:-}" ] || [ ! -f "$OPENPI_RTC_PATH/pyproject.toml" ]; then[m
+[32m+[m[32m                echo "[flexiv] OPENPI_RTC_PATH must point to an RTC-compatible OpenPI checkout." >&2[m
+[32m+[m[32m                exit 1[m
+[32m+[m[32m            fi[m
+[32m+[m[32m            uv pip uninstall rlinf-openpi[m
+[32m+[m[32m            uv pip install -e "$OPENPI_RTC_PATH" --no-deps[m
+[32m+[m[32m            install_flash_attn[m
+[32m+[m[32m            install_flexiv_env[m
+[32m+[m[32m            ;;[m
+         polaris)[m
+             create_and_sync_venv[m
+             install_common_embodied_deps[m
+[36m@@ -2849,7 +2862,7 @@[m [minstall_env_only() {[m
+     # A robot host trains in its env venv, so it takes the same embodied extra,[m
+     # training dependencies and system libraries as a model install.[m
+     case "$ENV_NAME" in[m
+[31m-        franka|franka-ros|so101|piper|dosw1|gim_arm|xsquare_turtle2)[m
+[32m+[m[32m        franka|franka-ros|flexiv|so101|piper|dosw1|gim_arm|xsquare_turtle2)[m
+             install_common_embodied_deps[m
+             ;;[m
+     esac[m
+[36m@@ -2866,6 +2879,9 @@[m [minstall_env_only() {[m
+         franka-ros)[m
+             install_franka_ros_realworld_env[m
+             ;;[m
+[32m+[m[32m        flexiv)[m
+[32m+[m[32m            install_flexiv_env[m
+[32m+[m[32m            ;;[m
+         xsquare_turtle2)[m
+             install_xsquare_turtle2_env[m
+             ;;[m
+[36m@@ -3347,6 +3363,14 @@[m [minstall_gim_arm_env() {[m
+     uv pip install -r "$SCRIPT_DIR/embodied/envs/gim_arm.txt"[m
+ }[m
+ [m
+[32m+[m[32minstall_flexiv_env() {[m
+[32m+[m[32m    uv pip install -r "$SCRIPT_DIR/embodied/envs/flexiv.txt"[m
+[32m+[m[32m    if ! python -c "import flexivrdk" >/dev/null 2>&1; then[m
+[32m+[m[32m        echo "[flexiv] WARNING: Flexiv RDK Python bindings are not importable." >&2[m
+[32m+[m[32m        echo "[flexiv] Install the vendor RDK on the robot host before inference." >&2[m
+[32m+[m[32m    fi[m
+[32m+[m[32m}[m
+[32m+[m
+ install_robotwin_env() {[m
+     # pytorch3d, warp-lang and curobo are CUDA-only, and TORCH_CUDA_ARCH_LIST exists solely[m
+     # for them. RoboTwin itself runs without all three once the task config selects[m
+[1mdiff --git a/rlinf/config.py b/rlinf/config.py[m
+[1mindex 5d953044..9399a782 100644[m
+[1m--- a/rlinf/config.py[m
+[1m+++ b/rlinf/config.py[m
+[36m@@ -96,6 +96,9 @@[m [mSupportedModel.RLT_MLP_POLICY = SupportedModel.register("rlt_mlp_policy", force=[m
+ SupportedModel.RLT_TD3_MLP_POLICY = SupportedModel.register([m
+     "rlt_td3_mlp_policy", force=True[m
+ )[m
+[32m+[m[32mSupportedModel.ONLINE_RESIDUAL_POLICY = SupportedModel.register([m
+[32m+[m[32m    "online_residual_policy", force=True[m
+[32m+[m[32m)[m
+ SupportedModel.GR00T = SupportedModel.register("gr00t", force=True)[m
+ SupportedModel.DEXBOTIC_PI = SupportedModel.register("dexbotic_pi", force=True)[m
+ SupportedModel.DEXBOTIC_DM0 = SupportedModel.register("dexbotic_dm0", force=True)[m
+[36m@@ -141,6 +144,7 @@[m [mEMBODIED_MODEL = set([m
+         SupportedModel.MLP_POLICY,[m
+         SupportedModel.RLT_MLP_POLICY,[m
+         SupportedModel.RLT_TD3_MLP_POLICY,[m
+[32m+[m[32m        SupportedModel.ONLINE_RESIDUAL_POLICY,[m
+         SupportedModel.GR00T,[m
+         SupportedModel.DEXBOTIC_PI,[m
+         SupportedModel.DEXBOTIC_DM0,[m
+[1mdiff --git a/rlinf/data/datasets/openpi_rlinf/__init__.py b/rlinf/data/datasets/openpi_rlinf/__init__.py[m
+[1mindex 99830ab5..bbc9e7cd 100644[m
+[1m--- a/rlinf/data/datasets/openpi_rlinf/__init__.py[m
+[1m+++ b/rlinf/data/datasets/openpi_rlinf/__init__.py[m
+[36m@@ -35,6 +35,14 @@[m [mdef _load_dual_franka_sft_dataloader() -> SftDataLoaderBuilder:[m
+     return build_dual_franka_sft_dataloader[m
+ [m
+ [m
+[32m+[m[32mdef _load_flexiv_sft_dataloader() -> SftDataLoaderBuilder:[m
+[32m+[m[32m    from rlinf.data.datasets.openpi_rlinf.flexiv import ([m
+[32m+[m[32m        build_flexiv_sft_dataloader,[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    return build_flexiv_sft_dataloader[m
+[32m+[m
+[32m+[m
+ def _load_official_openpi_sft_dataloader() -> SftDataLoaderBuilder:[m
+     from rlinf.data.datasets.openpi_rlinf.official_sft_data_loader import ([m
+         build_official_openpi_sft_dataloader,[m
+[36m@@ -47,6 +55,7 @@[m [mdef _load_official_openpi_sft_dataloader() -> SftDataLoaderBuilder:[m
+ _SFT_DATALOADER_BUILDERS = {[m
+     "behavior": _load_behavior_sft_dataloader,[m
+     "dualfranka": _load_dual_franka_sft_dataloader,[m
+[32m+[m[32m    "flexiv": _load_flexiv_sft_dataloader,[m
+     "robotwin": _load_official_openpi_sft_dataloader,[m
+ }[m
+ [m
+[36m@@ -70,12 +79,17 @@[m [mdef build_openpi_rlinf_sft_dataloader([m
+     eval_dataset: bool = False,[m
+ ) -> tuple[Any, Any]:[m
+     """Build the environment-specific openpi_rlinf SFT dataloader."""[m
+[32m+[m[32m    config_name = str(cfg.actor.model.openpi.config_name)[m
+[32m+[m[32m    if "flexiv" in config_name:[m
+[32m+[m[32m        return _load_flexiv_sft_dataloader()([m
+[32m+[m[32m            cfg, world_size, rank, data_paths, eval_dataset[m
+[32m+[m[32m        )[m
+     if bool(cfg.actor.model.openpi.get("use_rlt", False)):[m
+         return _load_official_openpi_sft_dataloader()([m
+             cfg, world_size, rank, data_paths, eval_dataset[m
+         )[m
+ [m
+[31m-    env_type = _resolve_env(str(cfg.actor.model.openpi.config_name))[m
+[32m+[m[32m    env_type = _resolve_env(config_name)[m
+     builder = _SFT_DATALOADER_BUILDERS[env_type]()[m
+     return builder(cfg, world_size, rank, data_paths, eval_dataset)[m
+ [m
+[1mdiff --git a/rlinf/data/datasets/openpi_rlinf/dual_franka/dual_franka_sft_data_loader.py b/rlinf/data/datasets/openpi_rlinf/dual_franka/dual_franka_sft_data_loader.py[m
+[1mindex c7a2100e..b73699e7 100644[m
+[1m--- a/rlinf/data/datasets/openpi_rlinf/dual_franka/dual_franka_sft_data_loader.py[m
+[1m+++ b/rlinf/data/datasets/openpi_rlinf/dual_franka/dual_franka_sft_data_loader.py[m
+[36m@@ -37,6 +37,7 @@[m [mimport torch[m
+ from openpi.transforms import DataTransformFn, compose[m
+ from torch.utils.data.distributed import DistributedSampler[m
+ [m
+[32m+[m[32mfrom rlinf.data.datasets.openpi_rlinf.collate import collate_openpi_sft_items[m
+ from rlinf.data.datasets.openpi_rlinf.dual_franka.dual_franka_sft_dataset import ([m
+     DualFrankaSftDataset,[m
+ )[m
+[36m@@ -116,47 +117,7 @@[m [mdef collate_dual_franka_sft_items([m
+     items: typing.Sequence[typing.Mapping[str, typing.Any]],[m
+ ) -> tuple[Observation, torch.Tensor]:[m
+     """Collate transformed items into ``(Observation, actions)``."""[m
+[31m-    if not items:[m
+[31m-        raise ValueError("Cannot collate an empty dual_franka SFT batch.")[m
+[31m-[m
+[31m-    images = {[m
+[31m-        key: torch.from_numpy([m
+[31m-            np.stack([np.asarray(item["image"][key]) for item in items])[m
+[31m-        )[m
+[31m-        for key in _IMAGE_KEYS[m
+[31m-    }[m
+[31m-    image_masks = {[m
+[31m-        key: torch.from_numpy([m
+[31m-            np.stack([m
+[31m-                [np.asarray(item["image_mask"][key], dtype=np.bool_) for item in items][m
+[31m-            )[m
+[31m-        )[m
+[31m-        for key in _IMAGE_KEYS[m
+[31m-    }[m
+[31m-    batch = {[m
+[31m-        "image": images,[m
+[31m-        "image_mask": image_masks,[m
+[31m-        "state": torch.from_numpy([m
+[31m-            np.stack([np.asarray(item["state"], dtype=np.float32) for item in items])[m
+[31m-        ),[m
+[31m-        "tokenized_prompt": torch.from_numpy([m
+[31m-            np.stack([m
+[31m-                [np.asarray(item["tokenized_prompt"], dtype=np.int64) for item in items][m
+[31m-            )[m
+[31m-        ).long(),[m
+[31m-        "tokenized_prompt_mask": torch.from_numpy([m
+[31m-            np.stack([m
+[31m-                [[m
+[31m-                    np.asarray(item["tokenized_prompt_mask"], dtype=np.bool_)[m
+[31m-                    for item in items[m
+[31m-                ][m
+[31m-            )[m
+[31m-        ),[m
+[31m-    }[m
+[31m-    actions = torch.from_numpy([m
+[31m-        np.stack([np.asarray(item["actions"], dtype=np.float32) for item in items])[m
+[31m-    )[m
+[31m-    return Observation.from_dict(batch), actions[m
+[32m+[m[32m    return collate_openpi_sft_items(items)[m
+ [m
+ [m
+ @dataclasses.dataclass(frozen=True)[m
+[1mdiff --git a/rlinf/envs/real/__init__.py b/rlinf/envs/real/__init__.py[m
+[1mindex b0344629..f119395a 100644[m
+[1m--- a/rlinf/envs/real/__init__.py[m
+[1m+++ b/rlinf/envs/real/__init__.py[m
+[36m@@ -35,6 +35,7 @@[m [m__all__ = ["RealWorldEnv", "load_tasks"][m
+ _ROBOT_PACKAGES = ([m
+     ".dosw1",[m
+     ".franka",[m
+[32m+[m[32m    ".flexiv",[m
+     ".gim_arm",[m
+     ".piper",[m
+     ".so101",[m
+[1mdiff --git a/rlinf/envs/real/env.py b/rlinf/envs/real/env.py[m
+[1mindex c31d51f9..b435c7d6 100644[m
+[1m--- a/rlinf/envs/real/env.py[m
+[1m+++ b/rlinf/envs/real/env.py[m
+[36m@@ -358,6 +358,11 @@[m [mclass RealWorldEnv(gym.Env):[m
+                     intervene_action[env_id] = env_intervene_action.copy()[m
+         infos["intervene_action"] = to_tensor(intervene_action)[m
+         infos["intervene_flag"] = to_tensor(intervene_flag)[m
+[32m+[m[32m        for mask_name in ("human_mask", "pair_mask"):[m
+[32m+[m[32m            if mask_name in infos:[m
+[32m+[m[32m                infos[mask_name] = to_tensor([m
+[32m+[m[32m                    np.asarray(infos[mask_name], dtype=bool)[m
+[32m+[m[32m                )[m
+         if "rlt_switch_flags" in infos:[m
+             infos["rlt_switch_flags"] = to_tensor([m
+                 np.asarray(infos["rlt_switch_flags"], dtype=bool)[m
+[36m@@ -398,6 +403,8 @@[m [mclass RealWorldEnv(gym.Env):[m
+ [m
+         raw_chunk_intervene_actions = [][m
+         raw_chunk_intervene_flag = [][m
+[32m+[m[32m        raw_chunk_human_masks = [][m
+[32m+[m[32m        raw_chunk_pair_masks = [][m
+         raw_chunk_rlt_switch_flags = [][m
+         self._notify_action_chunk_begin()[m
+         for i in range(chunk_size):[m
+[36m@@ -410,6 +417,10 @@[m [mclass RealWorldEnv(gym.Env):[m
+             if "intervene_action" in infos:[m
+                 raw_chunk_intervene_actions.append(infos["intervene_action"])[m
+                 raw_chunk_intervene_flag.append(infos["intervene_flag"])[m
+[32m+[m[32m            if "human_mask" in infos:[m
+[32m+[m[32m                raw_chunk_human_masks.append(infos["human_mask"])[m
+[32m+[m[32m            if "pair_mask" in infos:[m
+[32m+[m[32m                raw_chunk_pair_masks.append(infos["pair_mask"])[m
+             if "rlt_switch_flags" in infos:[m
+                 raw_chunk_rlt_switch_flags.append(infos["rlt_switch_flags"])[m
+ [m
+[36m@@ -436,6 +447,12 @@[m [mclass RealWorldEnv(gym.Env):[m
+             ).reshape(self.num_envs, -1)[m
+             infos_last["intervene_flag"] = torch.stack(raw_chunk_intervene_flag, dim=1)[m
+             infos_list[-1] = infos_last[m
+[32m+[m[32m        if raw_chunk_human_masks:[m
+[32m+[m[32m            infos_last["human_mask"] = torch.stack(raw_chunk_human_masks, dim=1)[m
+[32m+[m[32m            infos_list[-1] = infos_last[m
+[32m+[m[32m        if raw_chunk_pair_masks:[m
+[32m+[m[32m            infos_last["pair_mask"] = torch.stack(raw_chunk_pair_masks, dim=1)[m
+[32m+[m[32m            infos_list[-1] = infos_last[m
+         if raw_chunk_rlt_switch_flags:[m
+             infos_last["rlt_switch_flags"] = torch.stack([m
+                 raw_chunk_rlt_switch_flags, dim=1[m
+[1mdiff --git a/rlinf/envs/real/wrappers/teleop/composed.py b/rlinf/envs/real/wrappers/teleop/composed.py[m
+[1mindex 37a0e0ba..d95fc950 100644[m
+[1m--- a/rlinf/envs/real/wrappers/teleop/composed.py[m
+[1m+++ b/rlinf/envs/real/wrappers/teleop/composed.py[m
+[36m@@ -146,6 +146,10 @@[m [mclass ComposedTeleop(TeleopDevice):[m
+         if self.streamer is not None and self.streamer.streaming:[m
+             # Record parts delivered outside env.step for dataset consumers.[m
+             info = {**info, "streamed_parts": list(self.streamer.DELIVERS)}[m
+[32m+[m[32m        controlled_mask = np.zeros(np.asarray(policy_action).size, dtype=bool)[m
+[32m+[m[32m        for name in parts:[m
+[32m+[m[32m            controlled_mask[self.layout[name]] = True[m
+[32m+[m[32m        info = {**info, "teleop_action_mask": controlled_mask}[m
+         return TeleopSample([m
+             action=self._write(env, policy_action, parts),[m
+             active=driving,[m
+[1mdiff --git a/rlinf/envs/real/wrappers/teleop/intervention.py b/rlinf/envs/real/wrappers/teleop/intervention.py[m
+[1mindex f2c325cf..401d38c5 100644[m
+[1m--- a/rlinf/envs/real/wrappers/teleop/intervention.py[m
+[1m+++ b/rlinf/envs/real/wrappers/teleop/intervention.py[m
+[36m@@ -149,11 +149,23 @@[m [mclass TeleopIntervention(gym.Wrapper):[m
+ [m
+         obs, reward, terminated, truncated, info = self.env.step(applied)[m
+ [m
+[32m+[m[32m        intervention_mask = np.zeros(np.asarray(applied).shape, dtype=bool)[m
+         if overridden:[m
+             info["intervene_action"] = applied[m
+[32m+[m[32m            controlled = sample.info.get("teleop_action_mask")[m
+[32m+[m[32m            if controlled is None:[m
+[32m+[m[32m                controlled = np.ones(np.asarray(applied).shape, dtype=bool)[m
+[32m+[m[32m            intervention_mask = np.asarray(controlled, dtype=bool).reshape([m
+[32m+[m[32m                np.asarray(applied).shape[m
+[32m+[m[32m            )[m
+             if self.mark_flag:[m
+                 info["intervene_flag"] = np.ones(1)[m
+         info.update(sample.info)[m
+[32m+[m[32m        # Online residual replay treats all operator-controlled entries as both[m
+[32m+[m[32m        # imitation targets and trustworthy preference pairs by default.[m
+[32m+[m[32m        # Callers may narrow pair_mask before committing replay.[m
+[32m+[m[32m        info["human_mask"] = intervention_mask.copy()[m
+[32m+[m[32m        info["pair_mask"] = intervention_mask.copy()[m
+ [m
+         return obs, reward, terminated, truncated, info[m
+ [m
+[1mdiff --git a/rlinf/models/__init__.py b/rlinf/models/__init__.py[m
+[1mindex 6edfb093..7a763ab4 100644[m
+[1m--- a/rlinf/models/__init__.py[m
+[1m+++ b/rlinf/models/__init__.py[m
+[36m@@ -104,6 +104,11 @@[m [mdef _register_builtin_models():[m
+ [m
+         return get_model(cfg, torch_dtype)[m
+ [m
+[32m+[m[32m    def _build_online_residual_policy(cfg: DictConfig, torch_dtype):[m
+[32m+[m[32m        from rlinf.models.embodiment.online_residual_policy import get_model[m
+[32m+[m
+[32m+[m[32m        return get_model(cfg, torch_dtype)[m
+[32m+[m
+     def _build_gr00t(cfg: DictConfig, torch_dtype):[m
+         from rlinf.models.embodiment.gr00t import get_model[m
+ [m
+[36m@@ -249,6 +254,12 @@[m [mdef _register_builtin_models():[m
+         category="embodied",[m
+         force=True,[m
+     )[m
+[32m+[m[32m    register_model([m
+[32m+[m[32m        SupportedModel.ONLINE_RESIDUAL_POLICY.value,[m
+[32m+[m[32m        _build_online_residual_policy,[m
+[32m+[m[32m        category="embodied",[m
+[32m+[m[32m        force=True,[m
+[32m+[m[32m    )[m
+     register_model([m
+         SupportedModel.GR00T.value,[m
+         _build_gr00t,[m
+[1mdiff --git a/rlinf/models/embodiment/modules/rlt_token_transformer.py b/rlinf/models/embodiment/modules/rlt_token_transformer.py[m
+[1mindex bed210d2..56391549 100644[m
+[1m--- a/rlinf/models/embodiment/modules/rlt_token_transformer.py[m
+[1m+++ b/rlinf/models/embodiment/modules/rlt_token_transformer.py[m
+[36m@@ -107,6 +107,12 @@[m [mclass RLTSelfAttentionLayer(nn.Module):[m
+ class RLTTokenEncoder(nn.Module):[m
+     """Compress VLA prefix embeddings into a single RL token."""[m
+ [m
+[32m+[m[32m    def encode_flat([m
+[32m+[m[32m        self, prefix_embs: torch.Tensor, mask: torch.Tensor | None = None[m
+[32m+[m[32m    ) -> torch.Tensor:[m
+[32m+[m[32m        """Expose the standalone encoder without constructing a training decoder."""[m
+[32m+[m[32m        return self(prefix_embs, mask).reshape(prefix_embs.shape[0], -1)[m
+[32m+[m
+     def __init__([m
+         self,[m
+         *,[m
+[36m@@ -296,8 +302,80 @@[m [mclass RLTTokenDecoder(nn.Module):[m
+         return self.output_proj(x)[m
+ [m
+ [m
+[32m+[m[32mclass ParallelQueryRLTTokenDecoder(nn.Module):[m
+[32m+[m[32m    """Reconstruct every prefix position in parallel from learned queries."""[m
+[32m+[m
+[32m+[m[32m    def __init__([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        *,[m
+[32m+[m[32m        input_dim: int = 2048,[m
+[32m+[m[32m        embed_dim: int = 2048,[m
+[32m+[m[32m        prefix_seq_len: int = 768,[m
+[32m+[m[32m        num_layers: int = 2,[m
+[32m+[m[32m        num_heads: int = 8,[m
+[32m+[m[32m        mlp_ratio: float = 4.0,[m
+[32m+[m[32m        dropout_rate: float = 0.0,[m
+[32m+[m[32m    ):[m
+[32m+[m[32m        super().__init__()[m
+[32m+[m[32m        self.input_dim = int(input_dim)[m
+[32m+[m[32m        self.embed_dim = int(embed_dim)[m
+[32m+[m[32m        self.prefix_seq_len = int(prefix_seq_len)[m
+[32m+[m[32m        self.query_embed = nn.Parameter([m
+[32m+[m[32m            sinusoidal_pe_init(self.prefix_seq_len, self.embed_dim)[m
+[32m+[m[32m        )[m
+[32m+[m[32m        self.layers = nn.ModuleList([m
+[32m+[m[32m            [[m
+[32m+[m[32m                RLTSelfAttentionLayer([m
+[32m+[m[32m                    self.embed_dim,[m
+[32m+[m[32m                    num_heads=num_heads,[m
+[32m+[m[32m                    mlp_ratio=mlp_ratio,[m
+[32m+[m[32m                    dropout_rate=dropout_rate,[m
+[32m+[m[32m                )[m
+[32m+[m[32m                for _ in range(num_layers)[m
+[32m+[m[32m            ][m
+[32m+[m[32m        )[m
+[32m+[m[32m        self.output_proj = nn.Linear(self.embed_dim, self.input_dim)[m
+[32m+[m
+[32m+[m[32m    def forward([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        rl_tokens: torch.Tensor,[m
+[32m+[m[32m        target_embeddings: torch.Tensor,[m
+[32m+[m[32m        mask: torch.Tensor | None = None,[m
+[32m+[m[32m    ) -> torch.Tensor:[m
+[32m+[m[32m        """Use target shape and mask only; target values never enter the decoder."""[m
+[32m+[m[32m        target_seq_len = target_embeddings.shape[1][m
+[32m+[m[32m        if target_seq_len > self.prefix_seq_len:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                f"target sequence length {target_seq_len} exceeds configured "[m
+[32m+[m[32m                f"prefix_seq_len {self.prefix_seq_len}."[m
+[32m+[m[32m            )[m
+[32m+[m[32m        batch_size = rl_tokens.shape[0][m
+[32m+[m[32m        queries = self.query_embed[:target_seq_len].to([m
+[32m+[m[32m            device=rl_tokens.device, dtype=rl_tokens.dtype[m
+[32m+[m[32m        )[m
+[32m+[m[32m        queries = queries.unsqueeze(0).expand(batch_size, -1, -1)[m
+[32m+[m[32m        x = torch.cat([rl_tokens, queries], dim=1)[m
+[32m+[m[32m        decoder_mask = None[m
+[32m+[m[32m        if mask is not None:[m
+[32m+[m[32m            decoder_mask = torch.cat([m
+[32m+[m[32m                [[m
+[32m+[m[32m                    torch.ones([m
+[32m+[m[32m                        batch_size,[m
+[32m+[m[32m                        1,[m
+[32m+[m[32m                        device=x.device,[m
+[32m+[m[32m                        dtype=torch.bool,[m
+[32m+[m[32m                    ),[m
+[32m+[m[32m                    mask.to(device=x.device, dtype=torch.bool),[m
+[32m+[m[32m                ],[m
+[32m+[m[32m                dim=1,[m
+[32m+[m[32m            )[m
+[32m+[m[32m        for layer in self.layers:[m
+[32m+[m[32m            x = layer(x, mask=decoder_mask)[m
+[32m+[m[32m        return self.output_proj(x[:, 1:])[m
+[32m+[m
+[32m+[m
+ class RLTTokenTransformer(nn.Module):[m
+[31m-    """RLT encoder with an autoregressive reconstruction objective.[m
+[32m+[m[32m    """RLT encoder with a configurable reconstruction objective.[m
+ [m
+     The single RL token produces a flattened z_rl feature of ``embed_dim``.[m
+     """[m
+[36m@@ -312,6 +390,7 @@[m [mclass RLTTokenTransformer(nn.Module):[m
+         num_heads: int = 8,[m
+         mlp_ratio: float = 4.0,[m
+         dropout_rate: float = 0.0,[m
+[32m+[m[32m        decoder_type: str = "autoregressive",[m
+     ):[m
+         super().__init__()[m
+         self.input_dim = int(input_dim)[m
+[36m@@ -328,7 +407,17 @@[m [mclass RLTTokenTransformer(nn.Module):[m
+             "dropout_rate": dropout_rate,[m
+         }[m
+         self.encoder = RLTTokenEncoder(**common_kwargs)[m
+[31m-        self.decoder = RLTTokenDecoder(**common_kwargs)[m
+[32m+[m[32m        decoder_types = {[m
+[32m+[m[32m            "autoregressive": RLTTokenDecoder,[m
+[32m+[m[32m            "parallel_query": ParallelQueryRLTTokenDecoder,[m
+[32m+[m[32m        }[m
+[32m+[m[32m        if decoder_type not in decoder_types:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                "decoder_type must be 'autoregressive' or 'parallel_query'; "[m
+[32m+[m[32m                f"got {decoder_type!r}."[m
+[32m+[m[32m            )[m
+[32m+[m[32m        self.decoder_type = decoder_type[m
+[32m+[m[32m        self.decoder = decoder_types[decoder_type](**common_kwargs)[m
+ [m
+     @property[m
+     def z_dim(self) -> int:[m
+[1mdiff --git a/rlinf/models/embodiment/openpi/apxinf_adapter.py b/rlinf/models/embodiment/openpi/apxinf_adapter.py[m
+[1mindex b8aa85db..82e8123f 100644[m
+[1m--- a/rlinf/models/embodiment/openpi/apxinf_adapter.py[m
+[1m+++ b/rlinf/models/embodiment/openpi/apxinf_adapter.py[m
+[36m@@ -160,11 +160,43 @@[m [mclass _RLInfOpenPITransforms:[m
+                 *data_config.data_transforms.outputs,[m
+             ][m
+         )[m
+[32m+[m[32m        self._action_norm_stats = norm_stats["actions"][m
+[32m+[m[32m        self._use_quantile_norm = bool(data_config.use_quantile_norm)[m
+         self._image_keys = tuple(IMAGE_KEYS)[m
+         self._config_name = config_name[m
+         state_indices = openpi_cfg.get("state_indices", None)[m
+         self._state_indices = list(state_indices) if state_indices else None[m
+ [m
+[32m+[m[32m    def normalize_action_batch(self, actions: Any) -> torch.Tensor:[m
+[32m+[m[32m        """Map final physical action receipts back to the model's action domain."""[m
+[32m+[m[32m        source = torch.as_tensor(actions, dtype=torch.float32)[m
+[32m+[m[32m        width = source.shape[-1][m
+[32m+[m
+[32m+[m[32m        def value(name: str) -> torch.Tensor:[m
+[32m+[m[32m            array = getattr(self._action_norm_stats, name)[m
+[32m+[m[32m            return torch.as_tensor([m
+[32m+[m[32m                array[:width], device=source.device, dtype=source.dtype[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m        if self._use_quantile_norm:[m
+[32m+[m[32m            low, high = value("q01"), value("q99")[m
+[32m+[m[32m            return (source - low) / (high - low + 1.0e-6) * 2.0 - 1.0[m
+[32m+[m[32m        return (source - value("mean")) / (value("std") + 1.0e-6)[m
+[32m+[m
+[32m+[m[32m    def action_mapping(self, lower: Any, upper: Any):[m
+[32m+[m[32m        """Build the learner/rollout projection from the loaded fixed statistics."""[m
+[32m+[m[32m        from rlinf.algorithms.online_residual_rl.action_mapping import ActionMapping[m
+[32m+[m
+[32m+[m[32m        stats = self._action_norm_stats[m
+[32m+[m[32m        if self._use_quantile_norm:[m
+[32m+[m[32m            offset = np.asarray(stats.q01[: self.action_dim])[m
+[32m+[m[32m            scale = (np.asarray(stats.q99[: self.action_dim]) - offset + 1e-6) / 2[m
+[32m+[m[32m            offset = offset + scale[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            offset = np.asarray(stats.mean[: self.action_dim])[m
+[32m+[m[32m            scale = np.asarray(stats.std[: self.action_dim]) + 1e-6[m
+[32m+[m[32m        return ActionMapping(offset, scale, lower, upper)[m
+[32m+[m
+     def _select_state(self, states: Any) -> Any:[m
+         if not self._state_indices:[m
+             return states[m
+[36m@@ -255,8 +287,11 @@[m [mclass _RLInfOpenPITransforms:[m
+         self,[m
+         normalized_actions: np.ndarray,[m
+         prepared: list[dict[str, np.ndarray]],[m
+[32m+[m[32m        *,[m
+[32m+[m[32m        chunk_len: int | None = None,[m
+     ) -> torch.Tensor:[m
+         """Run RLinf's native OpenPI output transforms on normalized actions."""[m
+[32m+[m[32m        chunk_len = self.num_action_chunks if chunk_len is None else int(chunk_len)[m
+         rows = [][m
+         for actions, context in zip(normalized_actions, prepared, strict=True):[m
+             output = self._output_transform([m
+[36m@@ -270,17 +305,17 @@[m [mclass _RLInfOpenPITransforms:[m
+                 raise ValueError([m
+                     f"RLinf OpenPI actions must be rank 2, got {row.shape}"[m
+                 )[m
+[31m-            if row.shape[0] < self.num_action_chunks:[m
+[32m+[m[32m            if row.shape[0] < chunk_len:[m
+                 raise ValueError([m
+                     f"RLinf OpenPI postprocess returned {row.shape[0]} actions, "[m
+[31m-                    f"but {self.num_action_chunks} must be executed"[m
+[32m+[m[32m                    f"but {chunk_len} must be executed"[m
+                 )[m
+             if row.shape[1] != self.action_dim:[m
+                 raise ValueError([m
+                     f"RLinf OpenPI postprocess returned action_dim={row.shape[1]}, "[m
+                     f"expected {self.action_dim}"[m
+                 )[m
+[31m-            rows.append(row[: self.num_action_chunks])[m
+[32m+[m[32m            rows.append(row[:chunk_len])[m
+         return torch.from_numpy(np.stack(rows))[m
+ [m
+ [m
+[36m@@ -307,6 +342,9 @@[m [mclass OpenPIApxInfAdapter:[m
+         )[m
+         self.noise_source = str(self.apxinf_cfg.get("noise_source", "apxinf"))[m
+         self.seed = int(self.apxinf_cfg.get("seed", 0))[m
+[32m+[m[32m        self.return_prefix_hidden_states = bool([m
+[32m+[m[32m            self.apxinf_cfg.get("return_prefix_hidden_states", False)[m
+[32m+[m[32m        )[m
+         self.device = str(device)[m
+ [m
+         self._validate_config()[m
+[36m@@ -446,11 +484,14 @@[m [mclass OpenPIApxInfAdapter:[m
+         return noise.cpu().numpy()[m
+ [m
+     def predict_action_batch([m
+[31m-        self, env_obs: Mapping[str, Any], *, mode: str = "eval"[m
+[32m+[m[32m        self,[m
+[32m+[m[32m        env_obs: Mapping[str, Any],[m
+[32m+[m[32m        *,[m
+[32m+[m[32m        mode: str = "eval",[m
+     ) -> tuple[torch.Tensor, dict[str, Any]]:[m
+         """Run RLinf transforms -> ApxInf L1 -> RLinf output transforms."""[m
+[31m-        if mode != "eval":[m
+[31m-            raise ValueError("OpenPIApxInfAdapter is eval-only")[m
+[32m+[m[32m        if mode not in {"train", "eval"}:[m
+[32m+[m[32m            raise ValueError(f"Unsupported rollout mode {mode!r}")[m
+ [m
+         prepared = self.processor.preprocess_batch([m
+             env_obs,[m
+[36m@@ -466,6 +507,7 @@[m [mclass OpenPIApxInfAdapter:[m
+         sampled_noise = self._sample_noise(batch_size)[m
+ [m
+         normalized_rows = [][m
+[32m+[m[32m        prefix_rows = [][m
+         timings = [][m
+         for index, model_input in enumerate(prepared):[m
+             noise = None[m
+[36m@@ -475,15 +517,31 @@[m [mclass OpenPIApxInfAdapter:[m
+                 noise = sampled_noise[index][m
+ [m
+             started = time.perf_counter()[m
+[31m-            normalized = np.asarray([m
+[31m-                self.model.infer_rgb([m
+[31m-                    model_input["rgb_u8"],[m
+[31m-                    "nhwc",[m
+[31m-                    model_input["token_ids"],[m
+[31m-                    noise=noise,[m
+[31m-                ),[m
+[31m-                dtype=np.float32,[m
+[32m+[m[32m            if self.return_prefix_hidden_states:[m
+[32m+[m[32m                inference = getattr(self.model, "infer_rgb_with_prefix", None)[m
+[32m+[m[32m                if not callable(inference):[m
+[32m+[m[32m                    raise RuntimeError([m
+[32m+[m[32m                        "ApxInf prefix output was requested, but the loaded binding "[m
+[32m+[m[32m                        "does not expose infer_rgb_with_prefix()."[m
+[32m+[m[32m                    )[m
+[32m+[m[32m            else:[m
+[32m+[m[32m                inference = self.model.infer_rgb[m
+[32m+[m[32m            raw_output = inference([m
+[32m+[m[32m                model_input["rgb_u8"],[m
+[32m+[m[32m                "nhwc",[m
+[32m+[m[32m                model_input["token_ids"],[m
+[32m+[m[32m                noise=noise,[m
+             )[m
+[32m+[m[32m            if self.return_prefix_hidden_states:[m
+[32m+[m[32m                raw_output, prefix = raw_output[m
+[32m+[m[32m                prefix = np.asarray(prefix, dtype=np.float32)[m
+[32m+[m[32m                if prefix.ndim != 2 or not np.isfinite(prefix).all():[m
+[32m+[m[32m                    raise ValueError([m
+[32m+[m[32m                        "ApxInf prefix hidden states must be finite rank-2 arrays; "[m
+[32m+[m[32m                        f"got {prefix.shape}."[m
+[32m+[m[32m                    )[m
+[32m+[m[32m                prefix_rows.append(prefix)[m
+[32m+[m[32m            normalized = np.asarray(raw_output, dtype=np.float32)[m
+             model_ms = (time.perf_counter() - started) * 1000.0[m
+             expected_shape = (self.action_horizon, int(self.model.action_dim))[m
+             if normalized.shape != expected_shape:[m
+[36m@@ -500,9 +558,227 @@[m [mclass OpenPIApxInfAdapter:[m
+             np.stack(normalized_rows),[m
+             prepared,[m
+         )[m
+[31m-        return actions, {"apxinf_timing": timings}[m
+[32m+[m[32m        result: dict[str, Any] = {[m
+[32m+[m[32m            "apxinf_timing": timings,[m
+[32m+[m[32m            "normalized_actions": torch.from_numpy(np.stack(normalized_rows)),[m
+[32m+[m[32m            "prepared": prepared,[m
+[32m+[m[32m        }[m
+[32m+[m[32m        if prefix_rows:[m
+[32m+[m[32m            lengths = [row.shape[0] for row in prefix_rows][m
+[32m+[m[32m            hidden = np.zeros([m
+[32m+[m[32m                (len(prefix_rows), max(lengths), prefix_rows[0].shape[1]),[m
+[32m+[m[32m                dtype=np.float32,[m
+[32m+[m[32m            )[m
+[32m+[m[32m            mask = np.zeros(hidden.shape[:2], dtype=bool)[m
+[32m+[m[32m            for index, row in enumerate(prefix_rows):[m
+[32m+[m[32m                hidden[index, : len(row)] = row[m
+[32m+[m[32m                mask[index, : len(row)] = True[m
+[32m+[m[32m            result["prefix_hidden_states"] = torch.from_numpy(hidden)[m
+[32m+[m[32m            result["prefix_mask"] = torch.from_numpy(mask)[m
+[32m+[m[32m        return actions, result[m
+ [m
+     def close(self) -> None:[m
+         close = getattr(self.model, "close", None)[m
+         if callable(close):[m
+             close()[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass OnlineResidualApxInfAdapter:[m
+[32m+[m[32m    """Keep PI0.5 in ApxInf while running RLT and residual Actor in PyTorch."""[m
+[32m+[m
+[32m+[m[32m    def __init__([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        model_cfg: DictConfig | Mapping[str, Any],[m
+[32m+[m[32m        device: str,[m
+[32m+[m[32m        *,[m
+[32m+[m[32m        base: OpenPIApxInfAdapter | None = None,[m
+[32m+[m[32m    ) -> None:[m
+[32m+[m[32m        from rlinf.algorithms.online_residual_rl import ([m
+[32m+[m[32m            OnlineResidualController,[m
+[32m+[m[32m            OnlineResidualRLConfig,[m
+[32m+[m[32m            ResidualActor,[m
+[32m+[m[32m        )[m
+[32m+[m[32m        from rlinf.models.embodiment.modules.rlt_token_transformer import ([m
+[32m+[m[32m            RLTTokenEncoder,[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m        self.model_cfg = model_cfg[m
+[32m+[m[32m        online_cfg = model_cfg.get("online_residual", {})[m
+[32m+[m[32m        contract = OnlineResidualRLConfig([m
+[32m+[m[32m            **{[m
+[32m+[m[32m                field.name: online_cfg[field.name][m
+[32m+[m[32m                for field in dataclasses.fields(OnlineResidualRLConfig)[m
+[32m+[m[32m                if field.name in online_cfg[m
+[32m+[m[32m            }[m
+[32m+[m[32m        )[m
+[32m+[m[32m        if int(model_cfg.get("action_dim", contract.action_dim)) != contract.action_dim:[m
+[32m+[m[32m            raise ValueError("ApxInf and online residual action dimensions disagree.")[m
+[32m+[m[32m        base_horizon = int(model_cfg.get("num_action_chunks", contract.actor_horizon))[m
+[32m+[m[32m        if base_horizon < contract.actor_horizon:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                "ApxInf base must produce at least the residual reference horizon; "[m
+[32m+[m[32m                f"got {base_horizon} < {contract.actor_horizon}."[m
+[32m+[m[32m            )[m
+[32m+[m[32m        self.config = contract[m
+[32m+[m[32m        self.device = torch.device(device)[m
+[32m+[m[32m        self.base = base or OpenPIApxInfAdapter(model_cfg, device)[m
+[32m+[m[32m        if not self.base.return_prefix_hidden_states:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                "online residual ApxInf requires apxinf.return_prefix_hidden_states=true"[m
+[32m+[m[32m            )[m
+[32m+[m[32m        rlt_cfg = model_cfg.get("rlt", {})[m
+[32m+[m[32m        if rlt_cfg.get("image_prefix_tokens") is not None:[m
+[32m+[m[32m            raise ValueError("Online residual RLT requires the full multimodal prefix.")[m
+[32m+[m[32m        self.rlt_module = RLTTokenEncoder([m
+[32m+[m[32m            input_dim=int(rlt_cfg.get("input_dim", contract.z_dim)),[m
+[32m+[m[32m            embed_dim=int(rlt_cfg.get("embed_dim", contract.z_dim)),[m
+[32m+[m[32m            prefix_seq_len=int(rlt_cfg.get("prefix_seq_len", 1024)),[m
+[32m+[m[32m            num_layers=int(rlt_cfg.get("num_layers", 2)),[m
+[32m+[m[32m            num_heads=int(rlt_cfg.get("num_heads", 8)),[m
+[32m+[m[32m            mlp_ratio=float(rlt_cfg.get("mlp_ratio", 4.0)),[m
+[32m+[m[32m        ).to(self.device)[m
+[32m+[m[32m        self.actor = ResidualActor(contract).to(self.device)[m
+[32m+[m[32m        self.controller = OnlineResidualController([m
+[32m+[m[32m            contract,[m
+[32m+[m[32m            rlt_encoder=self.rlt_module,[m
+[32m+[m[32m            actor=self.actor,[m
+[32m+[m[32m        )[m
+[32m+[m[32m        self._load_sidecar([m
+[32m+[m[32m            rlt_cfg.get("checkpoint"),[m
+[32m+[m[32m            model_cfg.get("actor_checkpoint", None),[m
+[32m+[m[32m        )[m
+[32m+[m[32m        self.rlt_module.eval()[m
+[32m+[m[32m        self.rlt_module.requires_grad_(False)[m
+[32m+[m[32m        self.actor.eval()[m
+[32m+[m[32m        self.metadata = {**self.base.metadata, "sidecar": "online_residual"}[m
+[32m+[m
+[32m+[m[32m    @staticmethod[m
+[32m+[m[32m    def _unwrap_state_dict(value: Any) -> Mapping[str, torch.Tensor]:[m
+[32m+[m[32m        if not isinstance(value, Mapping):[m
+[32m+[m[32m            raise ValueError("Sidecar checkpoint must contain a state-dict mapping.")[m
+[32m+[m[32m        for key in ("state_dict", "model", "module"):[m
+[32m+[m[32m            nested = value.get(key)[m
+[32m+[m[32m            if isinstance(nested, Mapping):[m
+[32m+[m[32m                return nested[m
+[32m+[m[32m        return value[m
+[32m+[m
+[32m+[m[32m    @staticmethod[m
+[32m+[m[32m    def _select_prefixed([m
+[32m+[m[32m        state: Mapping[str, torch.Tensor], prefixes: tuple[str, ...][m
+[32m+[m[32m    ) -> dict[str, torch.Tensor]:[m
+[32m+[m[32m        selected = {}[m
+[32m+[m[32m        for key, value in state.items():[m
+[32m+[m[32m            for prefix in prefixes:[m
+[32m+[m[32m                marker = f"{prefix}."[m
+[32m+[m[32m                position = key.find(marker)[m
+[32m+[m[32m                if position >= 0:[m
+[32m+[m[32m                    selected[key[position + len(marker) :]] = value[m
+[32m+[m[32m                    break[m
+[32m+[m[32m        return selected[m
+[32m+[m
+[32m+[m[32m    def _load_sidecar(self, rlt_checkpoint: Any, actor_checkpoint: Any) -> None:[m
+[32m+[m[32m        if not rlt_checkpoint:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                "rlt.checkpoint is required for APX online residual inference."[m
+[32m+[m[32m            )[m
+[32m+[m[32m        rlt_state = self._unwrap_state_dict([m
+[32m+[m[32m            torch.load(str(rlt_checkpoint), map_location="cpu", weights_only=False)[m
+[32m+[m[32m        )[m
+[32m+[m[32m        selected_rlt = self._select_prefixed([m
+[32m+[m[32m            rlt_state, ("rlt_module.encoder", "encoder")[m
+[32m+[m[32m        )[m
+[32m+[m[32m        self.rlt_module.load_state_dict(selected_rlt or rlt_state, strict=True)[m
+[32m+[m[32m        if actor_checkpoint:[m
+[32m+[m[32m            actor_state = self._unwrap_state_dict([m
+[32m+[m[32m                torch.load([m
+[32m+[m[32m                    str(actor_checkpoint), map_location="cpu", weights_only=False[m
+[32m+[m[32m                )[m
+[32m+[m[32m            )[m
+[32m+[m[32m            selected_actor = self._select_prefixed([m
+[32m+[m[32m                actor_state, ("actor", "module.actor")[m
+[32m+[m[32m            )[m
+[32m+[m[32m            self.actor.load_state_dict(selected_actor or actor_state, strict=True)[m
+[32m+[m
+[32m+[m[32m    @torch.inference_mode()[m
+[32m+[m[32m    def predict_action_batch([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        env_obs: Mapping[str, Any],[m
+[32m+[m[32m        *,[m
+[32m+[m[32m        mode: str = "eval",[m
+[32m+[m[32m        committed: torch.Tensor | None = None,[m
+[32m+[m[32m    ) -> tuple[torch.Tensor, dict[str, Any]]:[m
+[32m+[m[32m        """Return the executable prefix of the full VLA action chunk.[m
+[32m+[m
+[32m+[m[32m        The APX VLA computes the configured full horizon (32 for Flexiv). The[m
+[32m+[m[32m        residual controller consumes the first 12 actions; the remaining 20[m
+[32m+[m[32m        are intentionally dropped at this boundary.[m
+[32m+[m
+[32m+[m[32m        Optional normalized committed actions construct Critic metadata only.[m
+[32m+[m[32m        They never condition the VLA or the Actor.[m
+[32m+[m[32m        """[m
+[32m+[m[32m        _, base_result = self.base.predict_action_batch(env_obs, mode=mode)[m
+[32m+[m[32m        base_reference = base_result["normalized_actions"][[m
+[32m+[m[32m            ..., : self.config.actor_horizon, : self.config.action_dim[m
+[32m+[m[32m        ].to(self.device)[m
+[32m+[m[32m        prefix = base_result["prefix_hidden_states"].to(self.device)[m
+[32m+[m[32m        proprio = torch.as_tensor([m
+[32m+[m[32m            np.stack([m
+[32m+[m[32m                [[m
+[32m+[m[32m                    row["state"][: self.config.proprio_dim][m
+[32m+[m[32m                    for row in base_result["prepared"][m
+[32m+[m[32m                ][m
+[32m+[m[32m            ),[m
+[32m+[m[32m            device=self.device,[m
+[32m+[m[32m            dtype=torch.float32,[m
+[32m+[m[32m        )[m
+[32m+[m[32m        decision = self.controller.decide([m
+[32m+[m[32m            prefix_hidden_states=prefix,[m
+[32m+[m[32m            proprio=proprio,[m
+[32m+[m[32m            base_reference=base_reference,[m
+[32m+[m[32m            deterministic=(mode == "eval"),[m
+[32m+[m[32m            committed=committed,[m
+[32m+[m[32m            prefix_mask=base_result["prefix_mask"].to(self.device),[m
+[32m+[m[32m        )[m
+[32m+[m[32m        prepared = base_result["prepared"][m
+[32m+[m[32m        output = ([m
+[32m+[m[32m            decision.proposal[m
+[32m+[m[32m            if decision.proposal is not None[m
+[32m+[m[32m            else decision.actor_output[m
+[32m+[m[32m        )[m
+[32m+[m[32m        actions = self.base.processor.postprocess_batch([m
+[32m+[m[32m            output.detach().cpu().numpy(),[m
+[32m+[m[32m            prepared,[m
+[32m+[m[32m            chunk_len=self.config.actor_horizon,[m
+[32m+[m[32m        )[m
+[32m+[m[32m        forward_inputs = {[m
+[32m+[m[32m            "z_rl": decision.z,[m
+[32m+[m[32m            "proprio": decision.proprio,[m
+[32m+[m[32m            "base_ref": decision.base_reference,[m
+[32m+[m[32m            "committed": decision.committed,[m
+[32m+[m[32m            "actor_output": decision.actor_output,[m
+[32m+[m[32m            "policy_proposal": decision.proposal,[m
+[32m+[m[32m        }[m
+[32m+[m[32m        return actions, {[m
+[32m+[m[32m            "prev_logprobs": None,[m
+[32m+[m[32m            "prev_values": None,[m
+[32m+[m[32m            "forward_inputs": forward_inputs,[m
+[32m+[m[32m            "apxinf_timing": base_result["apxinf_timing"],[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m    def encode_receipts(self, physical_actions: torch.Tensor) -> torch.Tensor:[m
+[32m+[m[32m        """Normalize final robot/human receipts for replay, not the future queue."""[m
+[32m+[m[32m        stats = getattr(self.base.processor, "normalize_action_batch", None)[m
+[32m+[m[32m        if not callable(stats):[m
+[32m+[m[32m            raise RuntimeError([m
+[32m+[m[32m                "RLinf OpenPI transforms must expose normalize_action_batch() "[m
+[32m+[m[32m                "to commit physical execution receipts."[m
+[32m+[m[32m            )[m
+[32m+[m[32m        normalized = stats(physical_actions)[m
+[32m+[m[32m        return normalized.to(self.device)[m
+[32m+[m
+[32m+[m[32m    def reset(self) -> None:[m
+[32m+[m[32m        """Clear committed actions at an episode boundary."""[m
+[32m+[m[32m        self.controller.reset()[m
+[32m+[m
+[32m+[m[32m    def close(self) -> None:[m
+[32m+[m[32m        self.base.close()[m
+[1mdiff --git a/rlinf/models/embodiment/openpi/dataconfig/__init__.py b/rlinf/models/embodiment/openpi/dataconfig/__init__.py[m
+[1mindex f59a3048..c5417d65 100644[m
+[1m--- a/rlinf/models/embodiment/openpi/dataconfig/__init__.py[m
+[1m+++ b/rlinf/models/embodiment/openpi/dataconfig/__init__.py[m
+[36m@@ -252,6 +252,64 @@[m [m_CONFIGS = [[m
+         log_interval=5,[m
+         save_interval=250,[m
+     ),[m
+[32m+[m[32m    TrainConfig([m
+[32m+[m[32m        name="pi05_flexiv_rtc",[m
+[32m+[m[32m        model=pi0_config.Pi0Config([m
+[32m+[m[32m            pi05=True, action_horizon=12, discrete_state_input=True[m
+[32m+[m[32m        ),[m
+[32m+[m[32m        data=LeRobotFrankaEEDataConfig([m
+[32m+[m[32m            repo_id="RLinf/flexiv_rtc",[m
+[32m+[m[32m            base_config=DataConfig(prompt_from_task=True),[m
+[32m+[m[32m            assets=AssetsConfig([m
+[32m+[m[32m                assets_dir="checkpoints/torch/pi05_flexiv_rtc/assets"[m
+[32m+[m[32m            ),[m
+[32m+[m[32m            output_action_dim=7,[m
+[32m+[m[32m            pad_state=False,[m
+[32m+[m[32m            use_wrist_image=True,[m
+[32m+[m[32m        ),[m
+[32m+[m[32m        weight_loader=weight_loaders.CheckpointWeightLoader([m
+[32m+[m[32m            "checkpoints/jax/pi05_base"[m
+[32m+[m[32m        ),[m
+[32m+[m[32m        pytorch_weight_path="checkpoints/torch/pi05_base",[m
+[32m+[m[32m        seed=0,[m
+[32m+[m[32m        batch_size=16,[m
+[32m+[m[32m        optimizer=_optimizer.AdamW(clip_gradient_norm=1.0),[m
+[32m+[m[32m        ema_decay=0.999,[m
+[32m+[m[32m        num_workers=8,[m
+[32m+[m[32m        num_train_steps=20_000,[m
+[32m+[m[32m        log_interval=5,[m
+[32m+[m[32m        save_interval=2_000,[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    TrainConfig([m
+[32m+[m[32m        name="pi05_flexiv_online_residual",[m
+[32m+[m[32m        model=pi0_config.Pi0Config([m
+[32m+[m[32m            pi05=True, action_horizon=32, discrete_state_input=True[m
+[32m+[m[32m        ),[m
+[32m+[m[32m        data=LeRobotFrankaEEDataConfig([m
+[32m+[m[32m            repo_id="RLinf/flexiv_online_residual",[m
+[32m+[m[32m            base_config=DataConfig(prompt_from_task=True),[m
+[32m+[m[32m            assets=AssetsConfig([m
+[32m+[m[32m                assets_dir=([m
+[32m+[m[32m                    "checkpoints/torch/pi05_flexiv_online_residual/assets"[m
+[32m+[m[32m                )[m
+[32m+[m[32m            ),[m
+[32m+[m[32m            output_action_dim=7,[m
+[32m+[m[32m            pad_state=False,[m
+[32m+[m[32m            use_wrist_image=True,[m
+[32m+[m[32m        ),[m
+[32m+[m[32m        weight_loader=weight_loaders.CheckpointWeightLoader([m
+[32m+[m[32m            "checkpoints/jax/pi05_base"[m
+[32m+[m[32m        ),[m
+[32m+[m[32m        pytorch_weight_path="checkpoints/torch/pi05_base",[m
+[32m+[m[32m        seed=0,[m
+[32m+[m[32m        batch_size=16,[m
+[32m+[m[32m        optimizer=_optimizer.AdamW(clip_gradient_norm=1.0),[m
+[32m+[m[32m        ema_decay=0.999,[m
+[32m+[m[32m        num_workers=8,[m
+[32m+[m[32m        num_train_steps=20_000,[m
+[32m+[m[32m        log_interval=5,[m
+[32m+[m[32m        save_interval=2_000,[m
+[32m+[m[32m    ),[m
+     TrainConfig([m
+         name="pi05_franka_pnp",[m
+         model=pi0_config.Pi0Config([m
+[1mdiff --git a/rlinf/models/embodiment/openpi/dataconfig/franka_co_training_dataconfig.py b/rlinf/models/embodiment/openpi/dataconfig/franka_co_training_dataconfig.py[m
+[1mindex 57365732..7ef0430b 100644[m
+[1m--- a/rlinf/models/embodiment/openpi/dataconfig/franka_co_training_dataconfig.py[m
+[1m+++ b/rlinf/models/embodiment/openpi/dataconfig/franka_co_training_dataconfig.py[m
+[36m@@ -40,6 +40,7 @@[m [mclass LeRobotFrankaEEDataConfig(DataConfigFactory):[m
+     output_action_dim: int = 7[m
+     # Keep Pi0.5 discrete state prompts at the raw dataset state dimension.[m
+     pad_state: bool = True[m
+[32m+[m[32m    use_wrist_image: bool = False[m
+ [m
+     def generate_observations([m
+         image: np.ndarray, state: np.ndarray, prompt: str[m
+[36m@@ -55,17 +56,16 @@[m [mclass LeRobotFrankaEEDataConfig(DataConfigFactory):[m
+     def create([m
+         self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig[m
+     ) -> DataConfig:[m
+[32m+[m[32m        repack_keys = {[m
+[32m+[m[32m            "observation/image": "image",[m
+[32m+[m[32m            "observation/state": "state",[m
+[32m+[m[32m            "actions": "actions",[m
+[32m+[m[32m            "prompt": "prompt",[m
+[32m+[m[32m        }[m
+[32m+[m[32m        if self.use_wrist_image:[m
+[32m+[m[32m            repack_keys["observation/wrist_image"] = "wrist_image"[m
+         repack_transform = _transforms.Group([m
+[31m-            inputs=[[m
+[31m-                _transforms.RepackTransform([m
+[31m-                    {[m
+[31m-                        "observation/image": "image",[m
+[31m-                        "observation/state": "state",[m
+[31m-                        "actions": "actions",[m
+[31m-                        "prompt": "prompt",[m
+[31m-                    }[m
+[31m-                )[m
+[31m-            ][m
+[32m+[m[32m            inputs=[_transforms.RepackTransform(repack_keys)][m
+         )[m
+ [m
+         data_transforms = _transforms.Group([m
+[36m@@ -74,6 +74,7 @@[m [mclass LeRobotFrankaEEDataConfig(DataConfigFactory):[m
+                     action_dim=model_config.action_dim,[m
+                     model_type=model_config.model_type,[m
+                     pad_state=self.pad_state,[m
+[32m+[m[32m                    use_wrist_image=self.use_wrist_image,[m
+                 )[m
+             ],[m
+             outputs=[[m
+[1mdiff --git a/rlinf/models/embodiment/openpi/openpi_action_model.py b/rlinf/models/embodiment/openpi/openpi_action_model.py[m
+[1mindex 1cb4e8d0..ed38d771 100644[m
+[1m--- a/rlinf/models/embodiment/openpi/openpi_action_model.py[m
+[1m+++ b/rlinf/models/embodiment/openpi/openpi_action_model.py[m
+[36m@@ -110,6 +110,7 @@[m [mclass OpenPi0Config(Pi0Config):[m
+     rlt_mlp_ratio: float = 4.0[m
+     rlt_image_only: bool = True[m
+     rlt_use_mask: bool = False[m
+[32m+[m[32m    rlt_decoder_type: str = "autoregressive"[m
+     state_indices: list[int] | None = None[m
+ [m
+ [m
+[36m@@ -221,6 +222,7 @@[m [mclass OpenPi0ForRLActionPrediction(PI0Pytorch, BasePolicy):[m
+                 num_layers=self.config.rlt_num_layers,[m
+                 num_heads=self.config.rlt_num_heads,[m
+                 mlp_ratio=self.config.rlt_mlp_ratio,[m
+[32m+[m[32m                decoder_type=self.config.rlt_decoder_type,[m
+             ).to(dtype=torch.bfloat16)[m
+ [m
+         # ===== DSRL components initialization =====[m
+[1mdiff --git a/rlinf/models/embodiment/openpi/policies/franka_policy.py b/rlinf/models/embodiment/openpi/policies/franka_policy.py[m
+[1mindex 6110328d..e40661db 100644[m
+[1m--- a/rlinf/models/embodiment/openpi/policies/franka_policy.py[m
+[1m+++ b/rlinf/models/embodiment/openpi/policies/franka_policy.py[m
+[36m@@ -75,6 +75,7 @@[m [mclass FrankaEEInputs(transforms.DataTransformFn):[m
+     # Do not change this for your own dataset.[m
+     model_type: _model.ModelType = _model.ModelType.PI0[m
+     pad_state: bool = True[m
+[32m+[m[32m    use_wrist_image: bool = False[m
+ [m
+     def __call__(self, data: dict) -> dict:[m
+         if isinstance(data["observation/state"], np.ndarray):[m
+[36m@@ -109,6 +110,11 @@[m [mclass FrankaEEInputs(transforms.DataTransformFn):[m
+         else:[m
+             raise ValueError(f"Unsupported model type: {self.model_type}")[m
+ [m
+[32m+[m[32m        if self.use_wrist_image:[m
+[32m+[m[32m            wrist = _parse_image(data["observation/wrist_image"])[m
+[32m+[m[32m            images = (base_image, wrist, np.zeros_like(base_image))[m
+[32m+[m[32m            image_masks = (np.True_, np.True_, np.False_)[m
+[32m+[m
+         inputs = {[m
+             "state": state,[m
+             "image": dict(zip(names, images, strict=True)),[m
+[1mdiff --git a/rlinf/models/embodiment/openpi_rlinf/env_io.py b/rlinf/models/embodiment/openpi_rlinf/env_io.py[m
+[1mindex 5b88c6ca..9d787ab3 100644[m
+[1m--- a/rlinf/models/embodiment/openpi_rlinf/env_io.py[m
+[1m+++ b/rlinf/models/embodiment/openpi_rlinf/env_io.py[m
+[36m@@ -16,6 +16,7 @@[m
+ [m
+ from __future__ import annotations[m
+ [m
+[32m+[m[32mfrom collections.abc import Mapping[m
+ from typing import Any, Sequence[m
+ [m
+ import numpy as np[m
+[36m@@ -38,6 +39,8 @@[m [mclass EnvIO:[m
+ [m
+     _input_transform_fn = None[m
+     _output_transform_fn = None[m
+[32m+[m[32m    _action_norm_stats = None[m
+[32m+[m[32m    _action_use_quantiles = False[m
+ [m
+     def setup_transforms([m
+         self,[m
+[36m@@ -49,6 +52,18 @@[m [mclass EnvIO:[m
+ [m
+         self._input_transform_fn = compose(transforms)[m
+         self._output_transform_fn = compose(output_transforms)[m
+[32m+[m[32m        self._action_norm_stats = None[m
+[32m+[m[32m        self._action_use_quantiles = False[m
+[32m+[m[32m        for transform in transforms:[m
+[32m+[m[32m            if type(transform).__name__ != "Normalize":[m
+[32m+[m[32m                continue[m
+[32m+[m[32m            stats = getattr(transform, "norm_stats", None)[m
+[32m+[m[32m            if isinstance(stats, Mapping):[m
+[32m+[m[32m                self._action_norm_stats = stats.get("actions")[m
+[32m+[m[32m            self._action_use_quantiles = bool([m
+[32m+[m[32m                getattr(transform, "use_quantiles", False)[m
+[32m+[m[32m            )[m
+[32m+[m[32m            break[m
+ [m
+     def _ensure_transforms(self) -> None:[m
+         if self._input_transform_fn is None or self._output_transform_fn is None:[m
+[36m@@ -99,6 +114,48 @@[m [mclass EnvIO:[m
+         env_outputs = self.output_transform({"actions": model_actions, "state": state})[m
+         return env_outputs["actions"].to(device=self.device, dtype=torch.float32)[m
+ [m
+[32m+[m[32m    def normalize_rlt_actions(self, actions: torch.Tensor) -> torch.Tensor:[m
+[32m+[m[32m        """Normalize physical dataset actions for Stage-2 residual learning."""[m
+[32m+[m[32m        stats = self._action_norm_stats[m
+[32m+[m[32m        if stats is None:[m
+[32m+[m[32m            raise ValueError("The OpenPI checkpoint has no action normalization statistics.")[m
+[32m+[m[32m        source = actions.detach().to(torch.float32)[m
+[32m+[m[32m        width = source.shape[-1][m
+[32m+[m
+[32m+[m[32m        def as_tensor(value):[m
+[32m+[m[32m            return torch.as_tensor([m
+[32m+[m[32m                value[..., :width], device=source.device, dtype=source.dtype[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m        if self._action_use_quantiles:[m
+[32m+[m[32m            q01 = getattr(stats, "q01", None)[m
+[32m+[m[32m            q99 = getattr(stats, "q99", None)[m
+[32m+[m[32m            if q01 is None or q99 is None:[m
+[32m+[m[32m                raise ValueError("Quantile action statistics require q01 and q99.")[m
+[32m+[m[32m            low, high = as_tensor(q01), as_tensor(q99)[m
+[32m+[m[32m            return (source - low) / (high - low + 1e-6) * 2.0 - 1.0[m
+[32m+[m[32m        mean, std = as_tensor(stats.mean), as_tensor(stats.std)[m
+[32m+[m[32m        return (source - mean) / (std + 1e-6)[m
+[32m+[m
+[32m+[m[32m    def decode_rlt_actions([m
+[32m+[m[32m        self, normalized_actions: torch.Tensor, state: torch.Tensor[m
+[32m+[m[32m    ) -> torch.Tensor:[m
+[32m+[m[32m        """Apply the checkpoint's deterministic output map to normalized actions."""[m
+[32m+[m[32m        model_width = int(self.config.action_dim)[m
+[32m+[m[32m        if normalized_actions.shape[-1] > model_width:[m
+[32m+[m[32m            raise ValueError([m
+[32m+[m[32m                f"RLT action width {normalized_actions.shape[-1]} exceeds model width "[m
+[32m+[m[32m                f"{model_width}."[m
+[32m+[m[32m            )[m
+[32m+[m[32m        padded = torch.zeros([m
+[32m+[m[32m            *normalized_actions.shape[:-1],[m
+[32m+[m[32m            model_width,[m
+[32m+[m[32m            device=normalized_actions.device,[m
+[32m+[m[32m            dtype=normalized_actions.dtype,[m
+[32m+[m[32m        )[m
+[32m+[m[32m        padded[..., : normalized_actions.shape[-1]] = normalized_actions[m
+[32m+[m[32m        return self.decode_actions(padded, state)[m
+[32m+[m
+     def _observation_dict_to_device(self, processed: dict) -> Observation:[m
+         """Convert a per-key dict into a device-resident Observation."""[m
+         device = self.device[m
+[1mdiff --git a/rlinf/models/embodiment/openpi_rlinf/pi0.py b/rlinf/models/embodiment/openpi_rlinf/pi0.py[m
+[1mindex fd001941..2f8fa76c 100644[m
+[1m--- a/rlinf/models/embodiment/openpi_rlinf/pi0.py[m
+[1m+++ b/rlinf/models/embodiment/openpi_rlinf/pi0.py[m
+[36m@@ -605,6 +605,7 @@[m [mclass Pi0(model.BaseModel):[m
+                 num_layers=self.rlt_cfg.rlt_num_layers,[m
+                 num_heads=self.rlt_cfg.rlt_num_heads,[m
+                 mlp_ratio=self.rlt_cfg.rlt_mlp_ratio,[m
+[32m+[m[32m                decoder_type=self.rlt_cfg.rlt_decoder_type,[m
+             ).to(dtype=next(self.parameters()).dtype)[m
+         self._mark_fsdp_wrap_names()[m
+ [m
+[1mdiff --git a/rlinf/models/embodiment/openpi_rlinf/rlt_config.py b/rlinf/models/embodiment/openpi_rlinf/rlt_config.py[m
+[1mindex 0548e6ae..56cd5599 100644[m
+[1m--- a/rlinf/models/embodiment/openpi_rlinf/rlt_config.py[m
+[1m+++ b/rlinf/models/embodiment/openpi_rlinf/rlt_config.py[m
+[36m@@ -37,6 +37,8 @@[m [mclass OpenPiPytorchRLTConfig:[m
+     rlt_mlp_ratio: float = 4.0[m
+     rlt_image_only: bool = True[m
+     rlt_use_mask: bool = False[m
+[32m+[m[32m    rlt_normalized_actions: bool = False[m
+[32m+[m[32m    rlt_decoder_type: str = "autoregressive"[m
+ [m
+ [m
+ def build_rlt_config(model_cfg: Any) -> OpenPiPytorchRLTConfig:[m
+[36m@@ -58,4 +60,10 @@[m [mdef build_rlt_config(model_cfg: Any) -> OpenPiPytorchRLTConfig:[m
+             OmegaConf.select(model_cfg, "rlt_image_only", default=True)[m
+         ),[m
+         rlt_use_mask=bool(OmegaConf.select(model_cfg, "rlt_use_mask", default=False)),[m
+[32m+[m[32m        rlt_normalized_actions=bool([m
+[32m+[m[32m            OmegaConf.select(model_cfg, "rlt_normalized_actions", default=False)[m
+[32m+[m[32m        ),[m
+[32m+[m[32m        rlt_decoder_type=str([m
+[32m+[m[32m            OmegaConf.select(model_cfg, "rlt_decoder_type", default="autoregressive")[m
+[32m+[m[32m        ),[m
+     )[m
+[1mdiff --git a/rlinf/models/embodiment/openpi_rlinf/tasks/eval.py b/rlinf/models/embodiment/openpi_rlinf/tasks/eval.py[m
+[1mindex 50c51025..fc33c3e9 100644[m
+[1m--- a/rlinf/models/embodiment/openpi_rlinf/tasks/eval.py[m
+[1m+++ b/rlinf/models/embodiment/openpi_rlinf/tasks/eval.py[m
+[36m@@ -140,9 +140,14 @@[m [mclass Pi0Eval(EnvIO, Pi0):[m
+             prefix_mask,[m
+             kv_cache,[m
+         )[m
+[31m-        ref_chunk = self.output_transform([m
+[31m-            {"actions": model_actions, "state": observation.state}[m
+[31m-        )["actions"][m
+[32m+[m[32m        if self.rlt_cfg.rlt_normalized_actions:[m
+[32m+[m[32m            ref_chunk = model_actions[[m
+[32m+[m[32m                ..., : int(self.action_env_dim or model_actions.shape[-1])[m
+[32m+[m[32m            ][:, : int(self.action_chunk or model_actions.shape[1])][m
+[32m+[m[32m        else:[m
+[32m+[m[32m            ref_chunk = self.output_transform([m
+[32m+[m[32m                {"actions": model_actions, "state": observation.state}[m
+[32m+[m[32m            )["actions"][m
+ [m
+         raw_proprio = self._select_configured_state(env_obs["states"])[m
+         if "maniskill" in self.config_name.lower():[m
+[1mdiff --git a/rlinf/workers/rollout/apxinf/apxinf_worker.py b/rlinf/workers/rollout/apxinf/apxinf_worker.py[m
+[1mindex 32441080..3caf57f4 100644[m
+[1m--- a/rlinf/workers/rollout/apxinf/apxinf_worker.py[m
+[1m+++ b/rlinf/workers/rollout/apxinf/apxinf_worker.py[m
+[36m@@ -55,6 +55,7 @@[m [mclass ApxInfRolloutWorker(Worker):[m
+ [m
+     def init_worker(self) -> None:[m
+         from rlinf.models.embodiment.openpi.apxinf_adapter import ([m
+[32m+[m[32m            OnlineResidualApxInfAdapter,[m
+             OpenPIApxInfAdapter,[m
+         )[m
+ [m
+[36m@@ -64,10 +65,12 @@[m [mclass ApxInfRolloutWorker(Worker):[m
+             if isinstance(current_device, int)[m
+             else str(current_device)[m
+         )[m
+[31m-        self.apxinf_adapter = OpenPIApxInfAdapter([m
+[31m-            self.model_cfg,[m
+[31m-            device,[m
+[32m+[m[32m        adapter_cls = ([m
+[32m+[m[32m            OnlineResidualApxInfAdapter[m
+[32m+[m[32m            if bool(self.model_cfg.get("online_residual", {}).get("enabled", False))[m
+[32m+[m[32m            else OpenPIApxInfAdapter[m
+         )[m
+[32m+[m[32m        self.apxinf_adapter = adapter_cls(self.model_cfg, device)[m
+         self.log_info([m
+             "ApxInf policy loaded: "[m
+             f"device={device}, metadata={dict(self.apxinf_adapter.metadata)}"[m
+[36m@@ -99,7 +102,15 @@[m [mclass ApxInfRolloutWorker(Worker):[m
+         return {"obs": merged, "reset": reset}[m
+ [m
+     def predict(self, env_obs: dict[str, Any]) -> torch.Tensor:[m
+[31m-        actions, _ = self.apxinf_adapter.predict_action_batch(env_obs, mode="eval")[m
+[32m+[m[32m        if bool(self.model_cfg.get("online_residual", {}).get("enabled", False)):[m
+[32m+[m[32m            committed = env_obs.get("committed")[m
+[32m+[m[32m            actions, _ = self.apxinf_adapter.predict_action_batch([m
+[32m+[m[32m                env_obs,[m
+[32m+[m[32m                mode="eval",[m
+[32m+[m[32m                committed=None if committed is None else torch.as_tensor(committed),[m
+[32m+[m[32m            )[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            actions, _ = self.apxinf_adapter.predict_action_batch(env_obs, mode="eval")[m
+         return actions.detach().cpu().contiguous()[m
+ [m
+     async def evaluate(self, input_channel, output_channel):[m
+[1mdiff --git a/tests/unit_tests/test_data.py b/tests/unit_tests/test_data.py[m
+[1mindex 99e66a13..d47aaea6 100644[m
+[1m--- a/tests/unit_tests/test_data.py[m
+[1m+++ b/tests/unit_tests/test_data.py[m
+[36m@@ -15,6 +15,7 @@[m
+ """Datasets, batching, and the on-the-wire shapes they produce."""[m
+ [m
+ import copy[m
+[32m+[m[32mimport dataclasses[m
+ import json[m
+ import random[m
+ import time[m
+[36m@@ -24,6 +25,13 @@[m [mimport pytest[m
+ import torch[m
+ from omegaconf import DictConfig[m
+ [m
+[32m+[m[32mfrom rlinf.algorithms.online_residual_rl import ([m
+[32m+[m[32m    FeatureRecord,[m
+[32m+[m[32m    OnlineResidualRLConfig,[m
+[32m+[m[32m    TransitionAssembler,[m
+[32m+[m[32m    UpdateBudget,[m
+[32m+[m[32m)[m
+[32m+[m[32mfrom rlinf.algorithms.online_residual_rl.learner import OnlineResidualLearner[m
+ from rlinf.data.datasets.reasoning.dataset import ReasoningDataset[m
+ from rlinf.data.schema.embodied_trajectory_builder import EmbodiedTrajectoryBuilder[m
+ from rlinf.data.storage.lerobot import add_frame_to_dataset, episode_boundaries[m
+[36m@@ -39,6 +47,401 @@[m [mfrom rlinf.utils.obs_compression import ([m
+ )[m
+ [m
+ [m
+[32m+[m[32mdef _online_feature([m
+[32m+[m[32m    config: OnlineResidualRLConfig, obs_id: str, frame_index: int[m
+[32m+[m[32m) -> FeatureRecord:[m
+[32m+[m[32m    return FeatureRecord([m
+[32m+[m[32m        obs_id=obs_id,[m
+[32m+[m[32m        z=torch.zeros(config.z_dim),[m
+[32m+[m[32m        proprio=torch.zeros(config.proprio_dim),[m
+[32m+[m[32m        base_reference=torch.zeros(config.actor_horizon, config.action_dim),[m
+[32m+[m[32m        committed=torch.zeros(config.inference_horizon, config.action_dim),[m
+[32m+[m[32m        episode_id="episode-0",[m
+[32m+[m[32m        frame_index=frame_index,[m
+[32m+[m[32m        model_version=0,[m
+[32m+[m[32m        config_version="test",[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_transition_defaults_pair_mask_to_human_intervention():[m
+[32m+[m[32m    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)[m
+[32m+[m[32m    assembler = TransitionAssembler(config)[m
+[32m+[m[32m    feature = _online_feature(config, "obs-0", 0)[m
+[32m+[m[32m    next_feature = _online_feature(config, "obs-12", config.td_horizon)[m
+[32m+[m[32m    proposal = torch.zeros(config.actor_horizon, config.action_dim)[m
+[32m+[m[32m    executed = proposal.clone()[m
+[32m+[m[32m    human_mask = torch.zeros_like(proposal, dtype=torch.bool)[m
+[32m+[m[32m    human_mask[7, :6] = True[m
+[32m+[m[32m    executed[human_mask] = 0.25[m
+[32m+[m[32m    assembler.begin(feature, proposal)[m
+[32m+[m
+[32m+[m[32m    transition = assembler.complete([m
+[32m+[m[32m        feature.obs_id,[m
+[32m+[m[32m        executed=executed,[m
+[32m+[m[32m        rewards=torch.zeros(config.td_horizon),[m
+[32m+[m[32m        terminal=False,[m
+[32m+[m[32m        valid_len=config.td_horizon,[m
+[32m+[m[32m        next_feature=next_feature,[m
+[32m+[m[32m        human_mask=human_mask,[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    assert transition.correction is not None[m
+[32m+[m[32m    assert torch.equal(transition.correction.human_mask, human_mask)[m
+[32m+[m[32m    assert torch.equal(transition.correction.pair_mask, human_mask)[m
+[32m+[m[32m    torch.testing.assert_close(transition.correction.proposal(executed), proposal)[m
+[32m+[m[32m    assert transition.relative_q_eligible[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_receipts_persist_real_action_and_sparse_intervention(tmp_path):[m
+[32m+[m[32m    from rlinf.algorithms.online_residual_rl.replay import EpisodeReplay[m
+[32m+[m
+[32m+[m[32m    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)[m
+[32m+[m[32m    feature = _online_feature(config, "obs-0", 0)[m
+[32m+[m[32m    feature = dataclasses.replace([m
+[32m+[m[32m        feature,[m
+[32m+[m[32m        committed=torch.full_like(feature.committed, 0.2),[m
+[32m+[m[32m    )[m
+[32m+[m[32m    proposal = torch.full((config.actor_horizon, config.action_dim), 0.3)[m
+[32m+[m[32m    proposal[: config.inference_horizon] = feature.committed[m
+[32m+[m[32m    assembler = TransitionAssembler(config)[m
+[32m+[m[32m    assembler.begin(feature, proposal)[m
+[32m+[m[32m    infos = [][m
+[32m+[m[32m    for frame in range(config.td_horizon):[m
+[32m+[m[32m        physical = torch.full((config.action_dim,), 0.1 if frame < 6 else 0.15)[m
+[32m+[m[32m        mask = torch.zeros(config.action_dim, dtype=torch.bool)[m
+[32m+[m[32m        if frame == 7:[m
+[32m+[m[32m            physical[:6] = 0.25[m
+[32m+[m[32m            mask[:6] = True[m
+[32m+[m[32m        infos.append([m
+[32m+[m[32m            {[m
+[32m+[m[32m                "frame_index": frame,[m
+[32m+[m[32m                "action_receipt": torch.full((config.action_dim,), -99.0),[m
+[32m+[m[32m                "action_receipt_physical": physical,[m
+[32m+[m[32m                "human_mask": mask,[m
+[32m+[m[32m                "pair_mask": mask.clone(),[m
+[32m+[m[32m            }[m
+[32m+[m[32m        )[m
+[32m+[m[32m    row = assembler.complete_from_receipts([m
+[32m+[m[32m        feature.obs_id,[m
+[32m+[m[32m        step_infos=infos,[m
+[32m+[m[32m        encode_actions=lambda actions: actions * 2,[m
+[32m+[m[32m        terminal=True,[m
+[32m+[m[32m        next_feature=None,[m
+[32m+[m[32m    )[m
+[32m+[m[32m    torch.testing.assert_close(row.executed[:6], feature.committed)[m
+[32m+[m[32m    torch.testing.assert_close(row.executed[7, :6], torch.full((6,), 0.5))[m
+[32m+[m[32m    assert row.correction.human_mask[7, :6].all()[m
+[32m+[m[32m    assert not row.correction.pair_mask[:6].any()[m
+[32m+[m[32m    torch.testing.assert_close(row.correction.proposal_values, torch.full((6,), 0.3))[m
+[32m+[m
+[32m+[m[32m    replay = EpisodeReplay(config, storage_dir=tmp_path)[m
+[32m+[m[32m    assert replay.commit_episode([row], success=True, terminal_frame=11) == 1[m
+[32m+[m[32m    saved = replay.store.load_episode(feature.episode_id)[m
+[32m+[m[32m    assert set(saved["features"]) == {feature.obs_id}[m
+[32m+[m[32m    assert saved["transitions"][0]["obs_id"] == feature.obs_id[m
+[32m+[m[32m    assert saved["transitions"][0]["correction_id"] == feature.obs_id[m
+[32m+[m[32m    torch.testing.assert_close(saved["transitions"][0]["exec"], row.executed)[m
+[32m+[m[32m    torch.testing.assert_close([m
+[32m+[m[32m        saved["corrections"][feature.obs_id]["proposal_values"],[m
+[32m+[m[32m        row.correction.proposal_values,[m
+[32m+[m[32m    )[m
+[32m+[m[32m    assert saved["transitions"][0]["return"].item() == pytest.approx(0.99**11)[m
+[32m+[m[32m    assert len(list(tmp_path.glob("*.pt"))) == 1[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_receipts_reject_missing_frame_or_committed_mismatch():[m
+[32m+[m[32m    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)[m
+[32m+[m[32m    feature = _online_feature(config, "obs-0", 0)[m
+[32m+[m[32m    proposal = torch.zeros(config.actor_horizon, config.action_dim)[m
+[32m+[m[32m    assembler = TransitionAssembler(config)[m
+[32m+[m[32m    assembler.begin(feature, proposal)[m
+[32m+[m[32m    infos = [[m
+[32m+[m[32m        {"frame_index": i, "action_receipt": torch.zeros(config.action_dim)}[m
+[32m+[m[32m        for i in range(config.td_horizon)[m
+[32m+[m[32m    ][m
+[32m+[m[32m    infos[4]["frame_index"] = 5[m
+[32m+[m[32m    with pytest.raises(ValueError, match="consecutive"):[m
+[32m+[m[32m        assembler.complete_from_receipts([m
+[32m+[m[32m            feature.obs_id,[m
+[32m+[m[32m            step_infos=infos,[m
+[32m+[m[32m            encode_actions=lambda values: values,[m
+[32m+[m[32m            terminal=True,[m
+[32m+[m[32m            next_feature=None,[m
+[32m+[m[32m        )[m
+[32m+[m[32m    infos[4]["frame_index"] = 4[m
+[32m+[m[32m    infos[0]["action_receipt_physical"] = torch.ones(config.action_dim)[m
+[32m+[m[32m    with pytest.raises(ValueError, match="committed prefix"):[m
+[32m+[m[32m        assembler.complete_from_receipts([m
+[32m+[m[32m            feature.obs_id,[m
+[32m+[m[32m            step_infos=infos,[m
+[32m+[m[32m            encode_actions=lambda values: values,[m
+[32m+[m[32m            terminal=True,[m
+[32m+[m[32m            next_feature=None,[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_update_budget_stops_without_new_transitions():[m
+[32m+[m[32m    budget = UpdateBudget(critic_per_transition=5, critic_per_actor=5)[m
+[32m+[m[32m    budget.add_transitions(2)[m
+[32m+[m
+[32m+[m[32m    critic_updates = 0[m
+[32m+[m[32m    actor_updates = 0[m
+[32m+[m[32m    while budget.take_critic():[m
+[32m+[m[32m        critic_updates += 1[m
+[32m+[m[32m        actor_updates += int(budget.take_actor())[m
+[32m+[m
+[32m+[m[32m    assert (critic_updates, actor_updates) == (10, 2)[m
+[32m+[m[32m    assert not budget.take_critic()[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_replay_rejects_invalid_schedule_and_unexecuted_decision():[m
+[32m+[m[32m    config = OnlineResidualRLConfig(z_dim=4, hidden_dim=8)[m
+[32m+[m[32m    assembler = TransitionAssembler(config)[m
+[32m+[m[32m    feature = _online_feature(config, "pending", 0)[m
+[32m+[m[32m    action = torch.zeros(config.actor_horizon, config.action_dim)[m
+[32m+[m[32m    assembler.begin(feature, action)[m
+[32m+[m[32m    kwargs = {[m
+[32m+[m[32m        "executed": action,[m
+[32m+[m[32m        "rewards": torch.zeros(config.td_horizon),[m
+[32m+[m[32m        "terminal": True,[m
+[32m+[m[32m        "next_feature": None,[m
+[32m+[m[32m    }[m
+[32m+[m[32m    with pytest.raises(ValueError, match="Scheduling-invalid"):[m
+[32m+[m[32m        assembler.complete("pending", valid_len=12, schedule_valid=False, **kwargs)[m
+[32m+[m[32m    with pytest.raises(ValueError, match="execution must have started"):[m
+[32m+[m[32m        assembler.complete("pending", valid_len=6, **kwargs)[m
+[32m+[m[32m    row = assembler.complete([m
+[32m+[m[32m        "pending",[m
+[32m+[m[32m        valid_len=8,[m
+[32m+[m[32m        human_mask=torch.ones_like(action, dtype=torch.bool),[m
+[32m+[m[32m        **kwargs,[m
+[32m+[m[32m    )[m
+[32m+[m[32m    assert row.correction.human_mask[:8].all()[m
+[32m+[m[32m    assert not row.correction.human_mask[8:].any()[m
+[32m+[m[32m    assert not row.correction.pair_mask[:6].any()[m
+[32m+[m[32m    assert row.correction.pair_mask[6:8].all()[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_bc_averages_samples_not_intervention_elements():[m
+[32m+[m[32m    from rlinf.algorithms.online_residual_rl.losses import behavior_cloning_losses[m
+[32m+[m
+[32m+[m[32m    actions = torch.zeros(2, 12, 7)[m
+[32m+[m[32m    targets = torch.ones_like(actions)[m
+[32m+[m[32m    targets[1] = 3[m
+[32m+[m[32m    human = torch.zeros_like(actions, dtype=torch.bool)[m
+[32m+[m[32m    human[0, 6, 0] = True[m
+[32m+[m[32m    human[1, 6:, :] = True[m
+[32m+[m[32m    ordinary, corrected = behavior_cloning_losses([m
+[32m+[m[32m        actions, actions, targets, valid_mask=torch.ones_like(human), human_mask=human[m
+[32m+[m[32m    )[m
+[32m+[m[32m    assert ordinary.item() == 0[m
+[32m+[m[32m    assert corrected.item() == 5  # Mean of per-sample MSEs 1 and 9.[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_residual_learner_updates_actor_and_critics():[m
+[32m+[m[32m    config = OnlineResidualRLConfig([m
+[32m+[m[32m        z_dim=4,[m
+[32m+[m[32m        hidden_dim=8,[m
+[32m+[m[32m        inference_horizon=2,[m
+[32m+[m[32m        actor_horizon=4,[m
+[32m+[m[32m        td_horizon=4,[m
+[32m+[m[32m        critic_updates_per_transition=1,[m
+[32m+[m[32m        critic_updates_per_actor_update=1,[m
+[32m+[m[32m    )[m
+[32m+[m[32m    learner = OnlineResidualLearner(config, action_projector=lambda value: value)[m
+[32m+[m[32m    feature = _online_feature(config, "row", 0)[m
+[32m+[m[32m    assembler = TransitionAssembler(config)[m
+[32m+[m[32m    proposal = torch.zeros(config.actor_horizon, config.action_dim)[m
+[32m+[m[32m    assembler.begin(feature, proposal)[m
+[32m+[m[32m    transition = assembler.complete([m
+[32m+[m[32m        feature.obs_id,[m
+[32m+[m[32m        executed=torch.zeros_like(proposal),[m
+[32m+[m[32m        rewards=torch.ones(config.td_horizon),[m
+[32m+[m[32m        terminal=True,[m
+[32m+[m[32m        valid_len=config.td_horizon,[m
+[32m+[m[32m        next_feature=None,[m
+[32m+[m[32m        human_mask=torch.zeros_like(proposal, dtype=torch.bool),[m
+[32m+[m[32m        pair_mask=torch.zeros_like(proposal, dtype=torch.bool),[m
+[32m+[m[32m    )[m
+[32m+[m[32m    critic_metrics = learner.critic_step([transition])[m
+[32m+[m[32m    actor_metrics = learner.actor_step([transition])[m
+[32m+[m[32m    assert {"critic/td", "critic/rank"} <= set(critic_metrics.values)[m
+[32m+[m[32m    assert {"actor/total", "actor/ordinary_bc"} <= set(actor_metrics.values)[m
+[32m+[m[32m    assert all(torch.isfinite(value).all() for value in learner.actor.parameters())[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_replay_training_credit_and_checkpoint(tmp_path):[m
+[32m+[m[32m    from rlinf.algorithms.online_residual_rl.replay import EpisodeReplay[m
+[32m+[m[32m    from rlinf.algorithms.online_residual_rl.training import OnlineTraining[m
+[32m+[m
+[32m+[m[32m    cfg = OnlineResidualRLConfig(z_dim=4, hidden_dim=8)[m
+[32m+[m[32m    assembler = TransitionAssembler(cfg)[m
+[32m+[m[32m    feature = _online_feature(cfg, "terminal", 0)[m
+[32m+[m[32m    actions = torch.zeros(cfg.actor_horizon, cfg.action_dim)[m
+[32m+[m[32m    assembler.begin(feature, actions)[m
+[32m+[m[32m    row = assembler.complete([m
+[32m+[m[32m        feature.obs_id,[m
+[32m+[m[32m        executed=actions,[m
+[32m+[m[32m        rewards=torch.zeros(cfg.td_horizon),[m
+[32m+[m[32m        terminal=True,[m
+[32m+[m[32m        valid_len=12,[m
+[32m+[m[32m        next_feature=None,[m
+[32m+[m[32m    )[m
+[32m+[m[32m    replay = EpisodeReplay(cfg)[m
+[32m+[m[32m    learner = OnlineResidualLearner(cfg, action_projector=lambda value: value)[m
+[32m+[m[32m    loop = OnlineTraining([m
+[32m+[m[32m        learner,[m
+[32m+[m[32m        replay,[m
+[32m+[m[32m        initial_episodes=1,[m
+[32m+[m[32m        warmup_updates=0,[m
+[32m+[m[32m        td_batch_size=2,[m
+[32m+[m[32m        supervision_batch_size=2,[m
+[32m+[m[32m    )[m
+[32m+[m[32m    assert loop.commit_episode([row], success=True, terminal_frame=11) == 1[m
+[32m+[m[32m    assert loop.commit_episode([row], success=True, terminal_frame=11) == 0[m
+[32m+[m[32m    saved_row = replay.sample(1)[0][m
+[32m+[m[32m    assert saved_row.rewards.sum().item() == 1[m
+[32m+[m[32m    torch.testing.assert_close(saved_row.discounted_return, torch.tensor([0.99**11]))[m
+[32m+[m[32m    # A terminal-only batch must not invoke either successor network.[m
+[32m+[m[32m    with mock.patch.object([m
+[32m+[m[32m        learner.target_actor, "forward", side_effect=AssertionError("bootstrap")[m
+[32m+[m[32m    ):[m
+[32m+[m[32m        for _ in range(5):[m
+[32m+[m[32m            assert "critic/td" in loop.step()[m
+[32m+[m[32m    assert loop.actor_updates == 1[m
+[32m+[m[32m    assert loop.step() == {}[m
+[32m+[m[32m    checkpoint = tmp_path / "resume.pt"[m
+[32m+[m[32m    loop.save(checkpoint)[m
+[32m+[m[32m    restored = OnlineTraining([m
+[32m+[m[32m        OnlineResidualLearner(cfg, action_projector=lambda value: value),[m
+[32m+[m[32m        EpisodeReplay(cfg),[m
+[32m+[m[32m        initial_episodes=1,[m
+[32m+[m[32m        warmup_updates=0,[m
+[32m+[m[32m    )[m
+[32m+[m[32m    restored.load(checkpoint)[m
+[32m+[m[32m    assert restored.actor_updates == 1[m
+[32m+[m[32m    assert restored.step() == {}[m
+[32m+[m[32m    assert restored.commit_episode([row], success=True, terminal_frame=11) == 0[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_fixed_handoff_rejects_early_switch_and_late_result():[m
+[32m+[m[32m    from rlinf.algorithms.online_residual_rl.scheduling import HandoffSchedule[m
+[32m+[m
+[32m+[m[32m    config = OnlineResidualRLConfig()[m
+[32m+[m[32m    schedule = HandoffSchedule(config)[m
+[32m+[m[32m    queue = torch.zeros(6, 7)[m
+[32m+[m[32m    schedule.recover(queue)[m
+[32m+[m[32m    first = schedule.begin(0, 4)[m
+[32m+[m[32m    queue.fill_(99)[m
+[32m+[m[32m    assert first.committed.count_nonzero() == 0[m
+[32m+[m[32m    assert schedule.submit(first.sequence, torch.ones(6, 7), completed_frame=3)[m
+[32m+[m[32m    with pytest.raises(ValueError, match="Early"):[m
+[32m+[m[32m        schedule.handoff(3)[m
+[32m+[m[32m    torch.testing.assert_close(schedule.handoff(6), torch.ones(6, 7))[m
+[32m+[m[32m    second = schedule.begin(6, 5)[m
+[32m+[m[32m    assert not schedule.submit(second.sequence, torch.zeros(6, 7), completed_frame=13)[m
+[32m+[m[32m    assert schedule.handoff(12) is None[m
+[32m+[m[32m    assert schedule.recovering[m
+[32m+[m[32m    assert not schedule.submit(first.sequence, torch.ones(6, 7), completed_frame=12)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_action_projection_uses_physical_limits():[m
+[32m+[m[32m    from rlinf.algorithms.online_residual_rl.action_mapping import ActionMapping[m
+[32m+[m
+[32m+[m[32m    mapping = ActionMapping([0.0, 0.5], [0.1, 0.5], [-0.02, 0.0], [0.02, 1.0])[m
+[32m+[m[32m    actions = torch.tensor([[0.5, 3.0]], requires_grad=True)[m
+[32m+[m[32m    projected = mapping(actions)[m
+[32m+[m[32m    torch.testing.assert_close(mapping.decode(projected), torch.tensor([[0.02, 1.0]]))[m
+[32m+[m[32m    projected.sum().backward()[m
+[32m+[m[32m    assert actions.grad is not None[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_flexiv_norm_batches_apply_training_delta_and_preserve_gripper(tmp_path):[m
+[32m+[m[32m    import numpy as np[m
+[32m+[m[32m    import pyarrow as pa[m
+[32m+[m[32m    import pyarrow.parquet as pq[m
+[32m+[m
+[32m+[m[32m    from toolkits.lerobot.calculate_flexiv_norm_stats import iter_numeric_batches[m
+[32m+[m
+[32m+[m[32m    (tmp_path / "meta").mkdir()[m
+[32m+[m[32m    (tmp_path / "data").mkdir()[m
+[32m+[m[32m    metadata = {[m
+[32m+[m[32m        "recorded_arm_names": ["left"],[m
+[32m+[m[32m        "action_representation": "eef_absolute",[m
+[32m+[m[32m        "total_frames": 3,[m
+[32m+[m[32m        "features": {[m
+[32m+[m[32m            "observation.eef_state": {"shape": [6]},[m
+[32m+[m[32m            "observation.joint_state": {"shape": [7]},[m
+[32m+[m[32m            "observation.gripper_state": {"shape": [1]},[m
+[32m+[m[32m            "action": {"shape": [7]},[m
+[32m+[m[32m        },[m
+[32m+[m[32m    }[m
+[32m+[m[32m    info = tmp_path / "meta" / "info.json"[m
+[32m+[m[32m    info.write_text(json.dumps(metadata))[m
+[32m+[m[32m    pq.write_table([m
+[32m+[m[32m        pa.table([m
+[32m+[m[32m            {[m
+[32m+[m[32m                "observation.eef_state": [[m
+[32m+[m[32m                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],[m
+[32m+[m[32m                    [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],[m
+[32m+[m[32m                    [2.0, 0.0, 0.0, 0.0, 0.0, 0.0],[m
+[32m+[m[32m                ],[m
+[32m+[m[32m                "observation.joint_state": [[0.0] * 7] * 3,[m
+[32m+[m[32m                "observation.gripper_state": [[0.060]] * 3,[m
+[32m+[m[32m                "action": [[m
+[32m+[m[32m                    [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.003],[m
+[32m+[m[32m                    [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.004],[m
+[32m+[m[32m                    [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.005],[m
+[32m+[m[32m                ],[m
+[32m+[m[32m            }[m
+[32m+[m[32m        ),[m
+[32m+[m[32m        tmp_path / "data" / "episode_000000.parquet",[m
+[32m+[m[32m    )[m
+[32m+[m[32m    batches = list(iter_numeric_batches(tmp_path, batch_size=2, action_horizon=2))[m
+[32m+[m[32m    assert [len(batch["state"]) for batch in batches] == [2, 1][m
+[32m+[m[32m    assert batches[0]["state"].shape == (2, 8)[m
+[32m+[m[32m    assert batches[0]["actions"].shape == (2, 2, 32)[m
+[32m+[m[32m    assert batches[0]["state"][0, -1] == 0.060[m
+[32m+[m[32m    assert batches[0]["actions"][0, 0, 6] == 0.003[m
+[32m+[m[32m    np.testing.assert_allclose(batches[0]["actions"][:, :, 0], [[1.0, 2.0], [1.0, 2.0]])[m
+[32m+[m[32m    np.testing.assert_allclose(batches[1]["actions"][:, :, 0], [[1.0, 1.0]])[m
+[32m+[m[32m    np.testing.assert_allclose(batches[0]["actions"][..., 7:], 0.0)[m
+[32m+[m
+[32m+[m[32m    metadata["action_representation"] = "eef_delta"[m
+[32m+[m[32m    info.write_text(json.dumps(metadata))[m
+[32m+[m[32m    with pytest.raises(ValueError, match="absolute TCP source"):[m
+[32m+[m[32m        list(iter_numeric_batches(tmp_path))[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_flexiv_tcp_delta_is_world_frame_and_keeps_absolute_gripper():[m
+[32m+[m[32m    import numpy as np[m
+[32m+[m
+[32m+[m[32m    from rlinf.data.datasets.openpi_rlinf.flexiv.flexiv_sft_dataset import ([m
+[32m+[m[32m        absolute_tcp_chunk_to_world_delta,[m
+[32m+[m[32m        future_action_indices,[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    reference = np.array([1.0, 2.0, 3.0, 0.0, 0.0, np.pi / 2])[m
+[32m+[m[32m    targets = np.array([m
+[32m+[m[32m        [[m
+[32m+[m[32m            [2.0, 4.0, 6.0, 0.0, 0.0, np.pi, 0.06],[m
+[32m+[m[32m            [0.0, 2.0, 3.0, 0.0, 0.0, 0.0, 0.01],[m
+[32m+[m[32m        ][m
+[32m+[m[32m    )[m
+[32m+[m[32m    delta = absolute_tcp_chunk_to_world_delta(reference, targets)[m
+[32m+[m
+[32m+[m[32m    np.testing.assert_allclose(delta[:, :3], [[1.0, 2.0, 3.0], [-1.0, 0.0, 0.0]])[m
+[32m+[m[32m    np.testing.assert_allclose([m
+[32m+[m[32m        delta[:, 3:6],[m
+[32m+[m[32m        [[0.0, 0.0, np.pi / 2], [0.0, 0.0, -np.pi / 2]],[m
+[32m+[m[32m    )[m
+[32m+[m[32m    np.testing.assert_allclose(delta[:, 6], [0.06, 0.01])[m
+[32m+[m[32m    np.testing.assert_array_equal([m
+[32m+[m[32m        future_action_indices(3, 4),[m
+[32m+[m[32m        [[0, 1, 2, 2], [1, 2, 2, 2], [2, 2, 2, 2]],[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m
+ class TestMathDatasetMultithread:[m
+     """Tests for ReasoningDataset multithread processing consistency."""[m
+ [m
+[1mdiff --git a/tests/unit_tests/test_models.py b/tests/unit_tests/test_models.py[m
+[1mindex db5c3fa6..7547160a 100644[m
+[1m--- a/tests/unit_tests/test_models.py[m
+[1m+++ b/tests/unit_tests/test_models.py[m
+[36m@@ -30,12 +30,20 @@[m [mimport torch[m
+ from omegaconf import OmegaConf[m
+ [m
+ from rlinf.algorithms.losses import compute_ppo_critic_loss[m
+[32m+[m[32mfrom rlinf.algorithms.online_residual_rl import ([m
+[32m+[m[32m    ActionRepresentation,[m
+[32m+[m[32m    OnlineResidualController,[m
+[32m+[m[32m    OnlineResidualRLConfig,[m
+[32m+[m[32m    ResidualActor,[m
+[32m+[m[32m    TwinQCritic,[m
+[32m+[m[32m)[m
+ from rlinf.config import SupportedModel[m
+ from rlinf.hybrid_engines.fsdp.utils import get_fsdp_wrap_policy[m
+ from rlinf.models import get_model, register_model[m
+ from rlinf.models.embodiment.modules.rlt_token_transformer import ([m
+     RLTTokenTransformer,[m
+ )[m
+[32m+[m[32mfrom rlinf.models.embodiment.openpi.apxinf_adapter import OpenPIApxInfAdapter[m
+ from rlinf.scheduler import Worker[m
+ from rlinf.utils.env_helpers import HistoryManager[m
+ from rlinf.utils.env_helpers.delay_sampler import ([m
+[36m@@ -138,7 +146,9 @@[m [mdef test_custom_model_registration_with_fsdp_wrap_policy():[m
+     assert wrap_policy(module=model.head, recurse=False, nonwrapped_numel=0)[m
+ [m
+ [m
+[31m-def _make_model(*, prefix_seq_len: int = 5) -> RLTTokenTransformer:[m
+[32m+[m[32mdef _make_model([m
+[32m+[m[32m    *, prefix_seq_len: int = 5, decoder_type: str = "autoregressive"[m
+[32m+[m[32m) -> RLTTokenTransformer:[m
+     torch.manual_seed(0)[m
+     return RLTTokenTransformer([m
+         input_dim=8,[m
+[36m@@ -147,6 +157,7 @@[m [mdef _make_model(*, prefix_seq_len: int = 5) -> RLTTokenTransformer:[m
+         num_layers=1,[m
+         num_heads=2,[m
+         dropout_rate=0.0,[m
+[32m+[m[32m        decoder_type=decoder_type,[m
+     )[m
+ [m
+ [m
+[36m@@ -207,6 +218,274 @@[m [mdef test_reconstruct_output_shape_matches_prefix_embeddings():[m
+     assert reconstructed.shape == prefix_embs.shape[m
+ [m
+ [m
+[32m+[m[32mdef test_parallel_query_decoder_does_not_read_teacher_target_values():[m
+[32m+[m[32m    model = _make_model(prefix_seq_len=4, decoder_type="parallel_query")[m
+[32m+[m[32m    model.eval()[m
+[32m+[m[32m    rl_tokens = torch.randn(2, 1, model.embed_dim)[m
+[32m+[m[32m    targets = torch.randn(2, 4, model.input_dim)[m
+[32m+[m
+[32m+[m[32m    original = model.decode(rl_tokens, targets)[m
+[32m+[m[32m    changed = model.decode(rl_tokens, targets + 1000.0)[m
+[32m+[m
+[32m+[m[32m    torch.testing.assert_close(original, changed)[m
+[32m+[m[32m    assert original.shape == targets.shape[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_residual_shapes_follow_selected_action_representation():[m
+[32m+[m[32m    eef = OnlineResidualRLConfig()[m
+[32m+[m[32m    joints = OnlineResidualRLConfig([m
+[32m+[m[32m        action_representation=ActionRepresentation.JOINT_ABSOLUTE[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    assert (eef.action_dim, eef.actor_input_dim, eef.actor_output_dim) == (7, 2140, 84)[m
+[32m+[m[32m    assert (joints.action_dim, joints.actor_input_dim, joints.actor_output_dim) == ([m
+[32m+[m[32m        8,[m
+[32m+[m[32m        2152,[m
+[32m+[m[32m        96,[m
+[32m+[m[32m    )[m
+[32m+[m[32m    assert eef.rank_weight == 50.0[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_residual_actor_starts_at_base_and_uses_committed_prefix():[m
+[32m+[m[32m    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)[m
+[32m+[m[32m    actor = ResidualActor(config)[m
+[32m+[m[32m    batch_size = 2[m
+[32m+[m[32m    z = torch.randn(batch_size, config.z_dim)[m
+[32m+[m[32m    proprio = torch.randn(batch_size, config.proprio_dim)[m
+[32m+[m[32m    reference = torch.randn(batch_size, config.actor_horizon, config.action_dim)[m
+[32m+[m[32m    committed = torch.randn(batch_size, config.inference_horizon, config.action_dim)[m
+[32m+[m
+[32m+[m[32m    actions = actor(z, proprio, reference)[m
+[32m+[m[32m    candidate = actor.candidate(committed, actions)[m
+[32m+[m
+[32m+[m[32m    torch.testing.assert_close(actions, reference)[m
+[32m+[m[32m    torch.testing.assert_close(candidate[:, : config.inference_horizon], committed)[m
+[32m+[m[32m    torch.testing.assert_close([m
+[32m+[m[32m        candidate[:, config.inference_horizon :],[m
+[32m+[m[32m        reference[:, config.inference_horizon :],[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_residual_actor_bound_and_independent_critics():[m
+[32m+[m[32m    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)[m
+[32m+[m[32m    actor = ResidualActor(config)[m
+[32m+[m[32m    critic = TwinQCritic(config)[m
+[32m+[m[32m    batch_size = 2[m
+[32m+[m[32m    z = torch.randn(batch_size, config.z_dim)[m
+[32m+[m[32m    proprio = torch.randn(batch_size, config.proprio_dim)[m
+[32m+[m[32m    reference = torch.randn(batch_size, config.actor_horizon, config.action_dim)[m
+[32m+[m[32m    noise = torch.full_like(reference, 1000.0)[m
+[32m+[m
+[32m+[m[32m    actions = actor(z, proprio, reference, pre_tanh_noise=noise)[m
+[32m+[m[32m    q1, q2 = critic(z, proprio, actions)[m
+[32m+[m
+[32m+[m[32m    assert torch.all((actions - reference).abs() <= config.residual_scale + 1e-6)[m
+[32m+[m[32m    assert q1.shape == q2.shape == (batch_size, 1)[m
+[32m+[m[32m    assert critic.q1.mlp[0].weight.data_ptr() != critic.q2.mlp[0].weight.data_ptr()[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_residual_controller_uses_final_receipts_as_next_committed_prefix():[m
+[32m+[m[32m    class Encoder(torch.nn.Module):[m
+[32m+[m[32m        def encode_flat(self, prefix):[m
+[32m+[m[32m            return prefix.mean(dim=1)[m
+[32m+[m
+[32m+[m[32m    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)[m
+[32m+[m[32m    actor = ResidualActor(config)[m
+[32m+[m[32m    controller = OnlineResidualController([m
+[32m+[m[32m        config,[m
+[32m+[m[32m        rlt_encoder=Encoder(),[m
+[32m+[m[32m        actor=actor,[m
+[32m+[m[32m        action_decoder=lambda value: value * 2,[m
+[32m+[m[32m        action_encoder=lambda value: value / 2,[m
+[32m+[m[32m    )[m
+[32m+[m[32m    base = torch.zeros(1, config.actor_horizon, config.action_dim)[m
+[32m+[m[32m    prefix = torch.ones(1, 5, config.z_dim)[m
+[32m+[m[32m    proprio = torch.zeros(1, config.proprio_dim)[m
+[32m+[m
+[32m+[m[32m    first = controller.decide([m
+[32m+[m[32m        prefix_hidden_states=prefix,[m
+[32m+[m[32m        proprio=proprio,[m
+[32m+[m[32m        base_reference=base,[m
+[32m+[m[32m        deterministic=True,[m
+[32m+[m[32m        committed=base[:, : config.inference_horizon],[m
+[32m+[m[32m    )[m
+[32m+[m[32m    physical_receipts = torch.full_like(first.decoded_execution, 0.4)[m
+[32m+[m[32m    second = controller.decide([m
+[32m+[m[32m        prefix_hidden_states=prefix,[m
+[32m+[m[32m        proprio=proprio,[m
+[32m+[m[32m        base_reference=base,[m
+[32m+[m[32m        deterministic=True,[m
+[32m+[m[32m        committed=physical_receipts / 2,[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    torch.testing.assert_close(second.committed, physical_receipts / 2)[m
+[32m+[m[32m    assert controller.pending_proposal is not None[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_apxinf_adapter_exposes_normalized_actions_and_prefix_for_sidecar():[m
+[32m+[m[32m    class Model:[m
+[32m+[m[32m        action_horizon = 12[m
+[32m+[m[32m        action_dim = 32[m
+[32m+[m[32m        num_views = 2[m
+[32m+[m[32m        image_size = 224[m
+[32m+[m
+[32m+[m[32m        def infer_rgb_with_prefix(self, rgb, layout, tokens, noise=None):[m
+[32m+[m[32m            assert rgb.shape == (2, 224, 224, 3)[m
+[32m+[m[32m            assert layout == "nhwc"[m
+[32m+[m[32m            assert tokens.tolist() == [1, 2][m
+[32m+[m[32m            assert noise is None[m
+[32m+[m[32m            return ([m
+[32m+[m[32m                np.zeros((12, 32), dtype=np.float32),[m
+[32m+[m[32m                np.ones((514, 2048), dtype=np.float32),[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m    class Processor:[m
+[32m+[m[32m        def preprocess_batch(self, env_obs, *, num_views, image_size):[m
+[32m+[m[32m            del env_obs[m
+[32m+[m[32m            assert (num_views, image_size) == (2, 224)[m
+[32m+[m[32m            return [[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    "rgb_u8": np.zeros((2, 224, 224, 3), dtype=np.uint8),[m
+[32m+[m[32m                    "token_ids": np.array([1, 2], dtype=np.uint32),[m
+[32m+[m[32m                    "state": np.zeros(8, dtype=np.float32),[m
+[32m+[m[32m                }[m
+[32m+[m[32m            ][m
+[32m+[m
+[32m+[m[32m        def postprocess_batch(self, normalized, prepared, *, chunk_len=None):[m
+[32m+[m[32m            del prepared[m
+[32m+[m[32m            length = 12 if chunk_len is None else chunk_len[m
+[32m+[m[32m            return torch.from_numpy(normalized[:, :length, :7])[m
+[32m+[m
+[32m+[m[32m    cfg = {[m
+[32m+[m[32m        "action_dim": 7,[m
+[32m+[m[32m        "num_action_chunks": 12,[m
+[32m+[m[32m        "openpi": {[m
+[32m+[m[32m            "config_name": "pi05_flexiv_online_residual",[m
+[32m+[m[32m            "num_steps": 4,[m
+[32m+[m[32m            "noise_method": "flow_ode",[m
+[32m+[m[32m        },[m
+[32m+[m[32m        "apxinf": {[m
+[32m+[m[32m            "action_horizon": 12,[m
+[32m+[m[32m            "num_flow_steps": 4,[m
+[32m+[m[32m            "return_prefix_hidden_states": True,[m
+[32m+[m[32m        },[m
+[32m+[m[32m    }[m
+[32m+[m[32m    adapter = OpenPIApxInfAdapter([m
+[32m+[m[32m        cfg,[m
+[32m+[m[32m        "cpu",[m
+[32m+[m[32m        model=Model(),[m
+[32m+[m[32m        processor=Processor(),[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    actions, result = adapter.predict_action_batch({}, mode="train")[m
+[32m+[m
+[32m+[m[32m    assert actions.shape == (1, 12, 7)[m
+[32m+[m[32m    assert result["normalized_actions"].shape == (1, 12, 32)[m
+[32m+[m[32m    assert result["prefix_hidden_states"].shape == (1, 514, 2048)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_online_residual_apx_predicts_without_committed_or_decoder(tmp_path):[m
+[32m+[m[32m    from rlinf.models.embodiment.modules.rlt_token_transformer import RLTTokenEncoder[m
+[32m+[m[32m    from rlinf.models.embodiment.openpi.apxinf_adapter import ([m
+[32m+[m[32m        OnlineResidualApxInfAdapter,[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    encoder = RLTTokenEncoder(input_dim=8, embed_dim=8, num_heads=2, prefix_seq_len=16)[m
+[32m+[m[32m    checkpoint = tmp_path / "encoder.pt"[m
+[32m+[m[32m    torch.save(encoder.state_dict(), checkpoint)[m
+[32m+[m
+[32m+[m[32m    class Processor:[m
+[32m+[m[32m        def postprocess_batch(self, normalized, prepared, *, chunk_len):[m
+[32m+[m[32m            assert chunk_len == 12[m
+[32m+[m[32m            return torch.from_numpy(normalized[:, :chunk_len, :7])[m
+[32m+[m
+[32m+[m[32m    class Base:[m
+[32m+[m[32m        return_prefix_hidden_states = True[m
+[32m+[m[32m        metadata = {"backend": "test"}[m
+[32m+[m[32m        processor = Processor()[m
+[32m+[m
+[32m+[m[32m        def predict_action_batch(self, obs, *, mode):[m
+[32m+[m[32m            # No committed argument is supported by the VLA boundary.[m
+[32m+[m[32m            assert mode == "eval"[m
+[32m+[m[32m            return None, {[m
+[32m+[m[32m                "normalized_actions": torch.zeros(1, 12, 32),[m
+[32m+[m[32m                "prefix_hidden_states": torch.ones(1, 10, 8),[m
+[32m+[m[32m                "prefix_mask": torch.ones(1, 10, dtype=torch.bool),[m
+[32m+[m[32m                "prepared": [{"state": np.zeros(8, dtype=np.float32)}],[m
+[32m+[m[32m                "apxinf_timing": [],[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m    adapter = OnlineResidualApxInfAdapter([m
+[32m+[m[32m        {[m
+[32m+[m[32m            "num_action_chunks": 12,[m
+[32m+[m[32m            "action_dim": 7,[m
+[32m+[m[32m            "online_residual": {"z_dim": 8, "hidden_dim": 8},[m
+[32m+[m[32m            "rlt": {[m
+[32m+[m[32m                "checkpoint": str(checkpoint),[m
+[32m+[m[32m                "num_heads": 2,[m
+[32m+[m[32m                "prefix_seq_len": 16,[m
+[32m+[m[32m            },[m
+[32m+[m[32m        },[m
+[32m+[m[32m        "cpu",[m
+[32m+[m[32m        base=Base(),[m
+[32m+[m[32m    )[m
+[32m+[m[32m    actions, info = adapter.predict_action_batch({})[m
+[32m+[m[32m    changed, candidate = adapter.predict_action_batch({}, committed=torch.ones(1, 6, 7))[m
+[32m+[m[32m    assert actions.shape == (1, 12, 7)[m
+[32m+[m[32m    torch.testing.assert_close(changed[:, :6], torch.ones(1, 6, 7))[m
+[32m+[m[32m    torch.testing.assert_close(changed[:, 6:], actions[:, 6:])[m
+[32m+[m[32m    assert info["forward_inputs"]["policy_proposal"] is None[m
+[32m+[m[32m    torch.testing.assert_close([m
+[32m+[m[32m        candidate["forward_inputs"]["policy_proposal"][:, :6], torch.ones(1, 6, 7)[m
+[32m+[m[32m    )[m
+[32m+[m[32m    assert not hasattr(adapter.rlt_module, "decoder")[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_apxinf_rollout_forwards_real_committed_prefix_only_for_online_policy():[m
+[32m+[m[32m    from rlinf.workers.rollout.apxinf.apxinf_worker import ApxInfRolloutWorker[m
+[32m+[m
+[32m+[m[32m    class Adapter:[m
+[32m+[m[32m        def __init__(self):[m
+[32m+[m[32m            self.received = None[m
+[32m+[m
+[32m+[m[32m        def predict_action_batch(self, obs, *, mode, **kwargs):[m
+[32m+[m[32m            self.received = kwargs[m
+[32m+[m[32m            return torch.zeros(1, 12, 7), {}[m
+[32m+[m
+[32m+[m[32m        def close(self):[m
+[32m+[m[32m            pass[m
+[32m+[m
+[32m+[m[32m    worker = ApxInfRolloutWorker.__new__(ApxInfRolloutWorker)[m
+[32m+[m[32m    worker.apxinf_adapter = Adapter()[m
+[32m+[m[32m    worker.model_cfg = {"online_residual": {"enabled": True}}[m
+[32m+[m[32m    committed = torch.ones(1, 6, 7)[m
+[32m+[m[32m    assert worker.predict({"committed": committed}).shape == (1, 12, 7)[m
+[32m+[m[32m    torch.testing.assert_close(worker.apxinf_adapter.received["committed"], committed)[m
+[32m+[m
+[32m+[m[32m    worker.model_cfg = {"online_residual": {"enabled": False}}[m
+[32m+[m[32m    worker.predict({"committed": committed})[m
+[32m+[m[32m    assert worker.apxinf_adapter.received == {}[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_flexiv_input_transform_preserves_both_camera_views():[m
+[32m+[m[32m    pytest.importorskip("openpi")[m
+[32m+[m[32m    from rlinf.models.embodiment.openpi.policies.franka_policy import FrankaEEInputs[m
+[32m+[m
+[32m+[m[32m    main = np.zeros((224, 224, 3), dtype=np.uint8)[m
+[32m+[m[32m    wrist = np.full_like(main, 37)[m
+[32m+[m[32m    observation = {[m
+[32m+[m[32m        "observation/image": main,[m
+[32m+[m[32m        "observation/wrist_image": wrist,[m
+[32m+[m[32m        "observation/state": np.zeros(8),[m
+[32m+[m[32m    }[m
+[32m+[m[32m    transformed = FrankaEEInputs(action_dim=32, pad_state=False, use_wrist_image=True)([m
+[32m+[m[32m        observation[m
+[32m+[m[32m    )[m
+[32m+[m[32m    assert sum(bool(value) for value in transformed["image_mask"].values()) == 2[m
+[32m+[m[32m    np.testing.assert_array_equal(transformed["image"]["left_wrist_0_rgb"], wrist)[m
+[32m+[m[32m    assert transformed["state"].shape == (8,)[m
+[32m+[m
+[32m+[m
+ def test_reconstruct_detaches_targets_but_trains_encoder_and_decoder():[m
+     model = _make_model(prefix_seq_len=4)[m
+     prefix_embs = torch.randn(2, 4, model.input_dim, requires_grad=True)[m
+[1mdiff --git a/tests/unit_tests/test_real_env.py b/tests/unit_tests/test_real_env.py[m
+[1mindex ec24466d..0bf9437c 100644[m
+[1m--- a/tests/unit_tests/test_real_env.py[m
+[1m+++ b/tests/unit_tests/test_real_env.py[m
+[36m@@ -830,6 +830,8 @@[m [mdef test_active_sample_replaces_the_policy_action():[m
+ [m
+     assert np.array_equal(env.stepped[0], EXPERT)[m
+     assert np.array_equal(info["intervene_action"], EXPERT)[m
+[32m+[m[32m    assert np.array_equal(info["human_mask"], np.ones_like(EXPERT, dtype=bool))[m
+[32m+[m[32m    assert np.array_equal(info["pair_mask"], info["human_mask"])[m
+ [m
+ [m
+ def test_inactive_device_leaves_the_policy_action_alone():[m
+[36m@@ -842,6 +844,132 @@[m [mdef test_inactive_device_leaves_the_policy_action_alone():[m
+ [m
+     assert np.array_equal(env.stepped[0], POLICY)[m
+     assert "intervene_action" not in info[m
+[32m+[m[32m    assert not info["human_mask"].any()[m
+[32m+[m[32m    assert not info["pair_mask"].any()[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_intervention_masks_only_the_parts_controlled_by_the_operator():[m
+[32m+[m[32m    controlled = np.array([True, True, False])[m
+[32m+[m[32m    sample = TeleopSample([m
+[32m+[m[32m        action=EXPERT,[m
+[32m+[m[32m        active=True,[m
+[32m+[m[32m        info={"teleop_action_mask": controlled},[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    info = TeleopIntervention(FakeEnv(), ScriptedDevice([sample])).step(POLICY)[4][m
+[32m+[m
+[32m+[m[32m    assert np.array_equal(info["human_mask"], controlled)[m
+[32m+[m[32m    assert np.array_equal(info["pair_mask"], controlled)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_flexiv_world_delta_and_gripper_conventions_match_collector():[m
+[32m+[m[32m    from scipy.spatial.transform import Rotation[m
+[32m+[m
+[32m+[m[32m    from rlinf.envs.real.flexiv.action import ([m
+[32m+[m[32m        apply_world_delta,[m
+[32m+[m[32m        denormalize_gripper,[m
+[32m+[m[32m        normalize_gripper,[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    pose = np.array([0.5, 0.0, 0.25, 1.0, 0.0, 0.0, 0.0])[m
+[32m+[m[32m    delta = np.array([0.01, -0.02, 0.03, 0.0, 0.0, np.pi / 2])[m
+[32m+[m[32m    target = apply_world_delta(pose, delta)[m
+[32m+[m
+[32m+[m[32m    np.testing.assert_allclose(target[:3], pose[:3] + delta[:3])[m
+[32m+[m[32m    np.testing.assert_allclose([m
+[32m+[m[32m        Rotation.from_quat([target[4], target[5], target[6], target[3]]).as_rotvec(),[m
+[32m+[m[32m        delta[3:],[m
+[32m+[m[32m    )[m
+[32m+[m[32m    assert normalize_gripper(0.003, closed_m=0.003, open_m=0.060) == 0.0[m
+[32m+[m[32m    assert denormalize_gripper(1.0, closed_m=0.003, open_m=0.060) == 0.060[m
+[32m+[m
+[32m+[m
+[32m+[m[32m@pytest.mark.parametrize([m
+[32m+[m[32m    ("representation", "action_dim"),[m
+[32m+[m[32m    [("eef_delta", 7), ("joint_absolute", 8)],[m
+[32m+[m[32m)[m
+[32m+[m[32mdef test_flexiv_dummy_env_contract(representation, action_dim):[m
+[32m+[m[32m    from rlinf.envs.real.flexiv.base import FlexivEnv[m
+[32m+[m
+[32m+[m[32m    env = FlexivEnv([m
+[32m+[m[32m        {[m
+[32m+[m[32m            "is_dummy": True,[m
+[32m+[m[32m            "action_representation": representation,[m
+[32m+[m[32m            "control_hz": 10000.0,[m
+[32m+[m[32m        }[m
+[32m+[m[32m    )[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        observation, _ = env.reset(seed=0)[m
+[32m+[m[32m        assert list(observation["state"]) == [[m
+[32m+[m[32m            "arm_joint_position",[m
+[32m+[m[32m            "gripper_position",[m
+[32m+[m[32m        ][m
+[32m+[m[32m        assert env.action_space.shape == (action_dim,)[m
+[32m+[m[32m        assert tuple(observation["frames"]) == ("main", "wrist")[m
+[32m+[m[32m        action = np.zeros(action_dim, dtype=np.float32)[m
+[32m+[m[32m        action[-1] = 1.0[m
+[32m+[m[32m        _, _, _, _, info = env.step(action)[m
+[32m+[m[32m        np.testing.assert_array_equal(info["action_receipt"], action)[m
+[32m+[m[32m        np.testing.assert_allclose([m
+[32m+[m[32m            info["action_receipt_physical"][-1], 0.060, atol=1e-7[m
+[32m+[m[32m        )[m
+[32m+[m[32m    finally:[m
+[32m+[m[32m        env.close()[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_flexiv_external_intervention_overrides_only_selected_parts():[m
+[32m+[m[32m    from rlinf.envs.real.flexiv.base import FlexivEnv[m
+[32m+[m[32m    from rlinf.envs.real.flexiv.intervention import FlexivInterventionDevice[m
+[32m+[m
+[32m+[m[32m    class Source:[m
+[32m+[m[32m        def __init__(self):[m
+[32m+[m[32m            self.command = None[m
+[32m+[m
+[32m+[m[32m        def poll(self, now_ns):[m
+[32m+[m[32m            del now_ns[m
+[32m+[m[32m            return self.command[m
+[32m+[m
+[32m+[m[32m    source = Source()[m
+[32m+[m[32m    env = TeleopIntervention([m
+[32m+[m[32m        FlexivEnv({"is_dummy": True, "control_hz": 10000.0}),[m
+[32m+[m[32m        FlexivInterventionDevice(source, arm="follower"),[m
+[32m+[m[32m    )[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        env.reset()[m
+[32m+[m[32m        source.command = SimpleNamespace([m
+[32m+[m[32m            timestamp_ns=0,[m
+[32m+[m[32m            valid_until_ns=2**63 - 1,[m
+[32m+[m[32m            mode="override",[m
+[32m+[m[32m            arm="follower",[m
+[32m+[m[32m            eef_delta=np.array([0.01, 0, 0, 0, 0, 0]),[m
+[32m+[m[32m            gripper=np.array([0.003 + 0.25 * (0.060 - 0.003)]),[m
+[32m+[m[32m            source="keyboard",[m
+[32m+[m[32m        )[m
+[32m+[m[32m        policy = np.array([0, 0.01, 0, 0, 0, 0, 1], dtype=np.float32)[m
+[32m+[m[32m        _, _, _, _, info = env.step(policy)[m
+[32m+[m[32m        np.testing.assert_allclose(info["action_receipt"], [0.01, 0, 0, 0, 0, 0, 0.25])[m
+[32m+[m[32m        np.testing.assert_allclose([m
+[32m+[m[32m            info["action_receipt_physical"][-1],[m
+[32m+[m[32m            0.003 + 0.25 * (0.060 - 0.003),[m
+[32m+[m[32m            atol=1e-7,[m
+[32m+[m[32m        )[m
+[32m+[m[32m        assert info["frame_index"] == 0[m
+[32m+[m[32m        assert info["human_mask"].all() and info["pair_mask"].all()[m
+[32m+[m[32m        assert info["intervention_source"] == "keyboard"[m
+[32m+[m
+[32m+[m[32m        source.command.gripper = None[m
+[32m+[m[32m        source.command.mode = "residual"[m
+[32m+[m[32m        _, _, _, _, info = env.step(policy)[m
+[32m+[m[32m        np.testing.assert_allclose(info["action_receipt"], [0.01, 0.01, 0, 0, 0, 0, 1])[m
+[32m+[m[32m        assert info["human_mask"][:6].all()[m
+[32m+[m[32m        assert not info["human_mask"][6][m
+[32m+[m
+[32m+[m[32m        source.command.valid_until_ns = 0[m
+[32m+[m[32m        _, _, _, _, info = env.step(policy)[m
+[32m+[m[32m        np.testing.assert_array_equal(info["action_receipt"], policy)[m
+[32m+[m[32m        assert not info["human_mask"].any()[m
+[32m+[m[32m    finally:[m
+[32m+[m[32m        env.close()[m
+ [m
+ [m
+ def test_control_is_held_between_samples_then_released():[m

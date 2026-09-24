@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, Sequence
 
 import numpy as np
@@ -38,6 +39,8 @@ class EnvIO:
 
     _input_transform_fn = None
     _output_transform_fn = None
+    _action_norm_stats = None
+    _action_use_quantiles = False
 
     def setup_transforms(
         self,
@@ -49,6 +52,18 @@ class EnvIO:
 
         self._input_transform_fn = compose(transforms)
         self._output_transform_fn = compose(output_transforms)
+        self._action_norm_stats = None
+        self._action_use_quantiles = False
+        for transform in transforms:
+            if type(transform).__name__ != "Normalize":
+                continue
+            stats = getattr(transform, "norm_stats", None)
+            if isinstance(stats, Mapping):
+                self._action_norm_stats = stats.get("actions")
+            self._action_use_quantiles = bool(
+                getattr(transform, "use_quantiles", False)
+            )
+            break
 
     def _ensure_transforms(self) -> None:
         if self._input_transform_fn is None or self._output_transform_fn is None:
@@ -98,6 +113,48 @@ class EnvIO:
         """Run the output transform and return env-space actions on this device."""
         env_outputs = self.output_transform({"actions": model_actions, "state": state})
         return env_outputs["actions"].to(device=self.device, dtype=torch.float32)
+
+    def normalize_rlt_actions(self, actions: torch.Tensor) -> torch.Tensor:
+        """Normalize physical dataset actions for Stage-2 residual learning."""
+        stats = self._action_norm_stats
+        if stats is None:
+            raise ValueError("The OpenPI checkpoint has no action normalization statistics.")
+        source = actions.detach().to(torch.float32)
+        width = source.shape[-1]
+
+        def as_tensor(value):
+            return torch.as_tensor(
+                value[..., :width], device=source.device, dtype=source.dtype
+            )
+
+        if self._action_use_quantiles:
+            q01 = getattr(stats, "q01", None)
+            q99 = getattr(stats, "q99", None)
+            if q01 is None or q99 is None:
+                raise ValueError("Quantile action statistics require q01 and q99.")
+            low, high = as_tensor(q01), as_tensor(q99)
+            return (source - low) / (high - low + 1e-6) * 2.0 - 1.0
+        mean, std = as_tensor(stats.mean), as_tensor(stats.std)
+        return (source - mean) / (std + 1e-6)
+
+    def decode_rlt_actions(
+        self, normalized_actions: torch.Tensor, state: torch.Tensor
+    ) -> torch.Tensor:
+        """Apply the checkpoint's deterministic output map to normalized actions."""
+        model_width = int(self.config.action_dim)
+        if normalized_actions.shape[-1] > model_width:
+            raise ValueError(
+                f"RLT action width {normalized_actions.shape[-1]} exceeds model width "
+                f"{model_width}."
+            )
+        padded = torch.zeros(
+            *normalized_actions.shape[:-1],
+            model_width,
+            device=normalized_actions.device,
+            dtype=normalized_actions.dtype,
+        )
+        padded[..., : normalized_actions.shape[-1]] = normalized_actions
+        return self.decode_actions(padded, state)
 
     def _observation_dict_to_device(self, processed: dict) -> Observation:
         """Convert a per-key dict into a device-resident Observation."""

@@ -146,6 +146,10 @@ class ComposedTeleop(TeleopDevice):
         if self.streamer is not None and self.streamer.streaming:
             # Record parts delivered outside env.step for dataset consumers.
             info = {**info, "streamed_parts": list(self.streamer.DELIVERS)}
+        controlled_mask = np.zeros(np.asarray(policy_action).size, dtype=bool)
+        for name in parts:
+            controlled_mask[self.layout[name]] = True
+        info = {**info, "teleop_action_mask": controlled_mask}
         return TeleopSample(
             action=self._write(env, policy_action, parts),
             active=driving,

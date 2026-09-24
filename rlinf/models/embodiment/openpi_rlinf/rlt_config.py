@@ -37,6 +37,8 @@ class OpenPiPytorchRLTConfig:
     rlt_mlp_ratio: float = 4.0
     rlt_image_only: bool = True
     rlt_use_mask: bool = False
+    rlt_normalized_actions: bool = False
+    rlt_decoder_type: str = "autoregressive"
 
 
 def build_rlt_config(model_cfg: Any) -> OpenPiPytorchRLTConfig:
@@ -58,4 +60,10 @@ def build_rlt_config(model_cfg: Any) -> OpenPiPytorchRLTConfig:
             OmegaConf.select(model_cfg, "rlt_image_only", default=True)
         ),
         rlt_use_mask=bool(OmegaConf.select(model_cfg, "rlt_use_mask", default=False)),
+        rlt_normalized_actions=bool(
+            OmegaConf.select(model_cfg, "rlt_normalized_actions", default=False)
+        ),
+        rlt_decoder_type=str(
+            OmegaConf.select(model_cfg, "rlt_decoder_type", default="autoregressive")
+        ),
     )

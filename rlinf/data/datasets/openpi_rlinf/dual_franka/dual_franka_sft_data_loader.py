@@ -37,6 +37,7 @@ import torch
 from openpi.transforms import DataTransformFn, compose
 from torch.utils.data.distributed import DistributedSampler
 
+from rlinf.data.datasets.openpi_rlinf.collate import collate_openpi_sft_items
 from rlinf.data.datasets.openpi_rlinf.dual_franka.dual_franka_sft_dataset import (
     DualFrankaSftDataset,
 )
@@ -116,47 +117,7 @@ def collate_dual_franka_sft_items(
     items: typing.Sequence[typing.Mapping[str, typing.Any]],
 ) -> tuple[Observation, torch.Tensor]:
     """Collate transformed items into ``(Observation, actions)``."""
-    if not items:
-        raise ValueError("Cannot collate an empty dual_franka SFT batch.")
-
-    images = {
-        key: torch.from_numpy(
-            np.stack([np.asarray(item["image"][key]) for item in items])
-        )
-        for key in _IMAGE_KEYS
-    }
-    image_masks = {
-        key: torch.from_numpy(
-            np.stack(
-                [np.asarray(item["image_mask"][key], dtype=np.bool_) for item in items]
-            )
-        )
-        for key in _IMAGE_KEYS
-    }
-    batch = {
-        "image": images,
-        "image_mask": image_masks,
-        "state": torch.from_numpy(
-            np.stack([np.asarray(item["state"], dtype=np.float32) for item in items])
-        ),
-        "tokenized_prompt": torch.from_numpy(
-            np.stack(
-                [np.asarray(item["tokenized_prompt"], dtype=np.int64) for item in items]
-            )
-        ).long(),
-        "tokenized_prompt_mask": torch.from_numpy(
-            np.stack(
-                [
-                    np.asarray(item["tokenized_prompt_mask"], dtype=np.bool_)
-                    for item in items
-                ]
-            )
-        ),
-    }
-    actions = torch.from_numpy(
-        np.stack([np.asarray(item["actions"], dtype=np.float32) for item in items])
-    )
-    return Observation.from_dict(batch), actions
+    return collate_openpi_sft_items(items)
 
 
 @dataclasses.dataclass(frozen=True)

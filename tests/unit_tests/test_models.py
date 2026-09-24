@@ -30,12 +30,20 @@ import torch
 from omegaconf import OmegaConf
 
 from rlinf.algorithms.losses import compute_ppo_critic_loss
+from rlinf.algorithms.online_residual_rl import (
+    ActionRepresentation,
+    OnlineResidualController,
+    OnlineResidualRLConfig,
+    ResidualActor,
+    TwinQCritic,
+)
 from rlinf.config import SupportedModel
 from rlinf.hybrid_engines.fsdp.utils import get_fsdp_wrap_policy
 from rlinf.models import get_model, register_model
 from rlinf.models.embodiment.modules.rlt_token_transformer import (
     RLTTokenTransformer,
 )
+from rlinf.models.embodiment.openpi.apxinf_adapter import OpenPIApxInfAdapter
 from rlinf.scheduler import Worker
 from rlinf.utils.env_helpers import HistoryManager
 from rlinf.utils.env_helpers.delay_sampler import (
@@ -138,7 +146,9 @@ def test_custom_model_registration_with_fsdp_wrap_policy():
     assert wrap_policy(module=model.head, recurse=False, nonwrapped_numel=0)
 
 
-def _make_model(*, prefix_seq_len: int = 5) -> RLTTokenTransformer:
+def _make_model(
+    *, prefix_seq_len: int = 5, decoder_type: str = "autoregressive"
+) -> RLTTokenTransformer:
     torch.manual_seed(0)
     return RLTTokenTransformer(
         input_dim=8,
@@ -147,6 +157,7 @@ def _make_model(*, prefix_seq_len: int = 5) -> RLTTokenTransformer:
         num_layers=1,
         num_heads=2,
         dropout_rate=0.0,
+        decoder_type=decoder_type,
     )
 
 
@@ -205,6 +216,274 @@ def test_reconstruct_output_shape_matches_prefix_embeddings():
     reconstructed, _ = model.reconstruct(prefix_embs)
 
     assert reconstructed.shape == prefix_embs.shape
+
+
+def test_parallel_query_decoder_does_not_read_teacher_target_values():
+    model = _make_model(prefix_seq_len=4, decoder_type="parallel_query")
+    model.eval()
+    rl_tokens = torch.randn(2, 1, model.embed_dim)
+    targets = torch.randn(2, 4, model.input_dim)
+
+    original = model.decode(rl_tokens, targets)
+    changed = model.decode(rl_tokens, targets + 1000.0)
+
+    torch.testing.assert_close(original, changed)
+    assert original.shape == targets.shape
+
+
+def test_online_residual_shapes_follow_selected_action_representation():
+    eef = OnlineResidualRLConfig()
+    joints = OnlineResidualRLConfig(
+        action_representation=ActionRepresentation.JOINT_ABSOLUTE
+    )
+
+    assert (eef.action_dim, eef.actor_input_dim, eef.actor_output_dim) == (7, 2140, 84)
+    assert (joints.action_dim, joints.actor_input_dim, joints.actor_output_dim) == (
+        8,
+        2152,
+        96,
+    )
+    assert eef.rank_weight == 50.0
+
+
+def test_online_residual_actor_starts_at_base_and_uses_committed_prefix():
+    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)
+    actor = ResidualActor(config)
+    batch_size = 2
+    z = torch.randn(batch_size, config.z_dim)
+    proprio = torch.randn(batch_size, config.proprio_dim)
+    reference = torch.randn(batch_size, config.actor_horizon, config.action_dim)
+    committed = torch.randn(batch_size, config.inference_horizon, config.action_dim)
+
+    actions = actor(z, proprio, reference)
+    candidate = actor.candidate(committed, actions)
+
+    torch.testing.assert_close(actions, reference)
+    torch.testing.assert_close(candidate[:, : config.inference_horizon], committed)
+    torch.testing.assert_close(
+        candidate[:, config.inference_horizon :],
+        reference[:, config.inference_horizon :],
+    )
+
+
+def test_online_residual_actor_bound_and_independent_critics():
+    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)
+    actor = ResidualActor(config)
+    critic = TwinQCritic(config)
+    batch_size = 2
+    z = torch.randn(batch_size, config.z_dim)
+    proprio = torch.randn(batch_size, config.proprio_dim)
+    reference = torch.randn(batch_size, config.actor_horizon, config.action_dim)
+    noise = torch.full_like(reference, 1000.0)
+
+    actions = actor(z, proprio, reference, pre_tanh_noise=noise)
+    q1, q2 = critic(z, proprio, actions)
+
+    assert torch.all((actions - reference).abs() <= config.residual_scale + 1e-6)
+    assert q1.shape == q2.shape == (batch_size, 1)
+    assert critic.q1.mlp[0].weight.data_ptr() != critic.q2.mlp[0].weight.data_ptr()
+
+
+def test_online_residual_controller_uses_final_receipts_as_next_committed_prefix():
+    class Encoder(torch.nn.Module):
+        def encode_flat(self, prefix):
+            return prefix.mean(dim=1)
+
+    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)
+    actor = ResidualActor(config)
+    controller = OnlineResidualController(
+        config,
+        rlt_encoder=Encoder(),
+        actor=actor,
+        action_decoder=lambda value: value * 2,
+        action_encoder=lambda value: value / 2,
+    )
+    base = torch.zeros(1, config.actor_horizon, config.action_dim)
+    prefix = torch.ones(1, 5, config.z_dim)
+    proprio = torch.zeros(1, config.proprio_dim)
+
+    first = controller.decide(
+        prefix_hidden_states=prefix,
+        proprio=proprio,
+        base_reference=base,
+        deterministic=True,
+        committed=base[:, : config.inference_horizon],
+    )
+    physical_receipts = torch.full_like(first.decoded_execution, 0.4)
+    second = controller.decide(
+        prefix_hidden_states=prefix,
+        proprio=proprio,
+        base_reference=base,
+        deterministic=True,
+        committed=physical_receipts / 2,
+    )
+
+    torch.testing.assert_close(second.committed, physical_receipts / 2)
+    assert controller.pending_proposal is not None
+
+
+def test_apxinf_adapter_exposes_normalized_actions_and_prefix_for_sidecar():
+    class Model:
+        action_horizon = 12
+        action_dim = 32
+        num_views = 2
+        image_size = 224
+
+        def infer_rgb_with_prefix(self, rgb, layout, tokens, noise=None):
+            assert rgb.shape == (2, 224, 224, 3)
+            assert layout == "nhwc"
+            assert tokens.tolist() == [1, 2]
+            assert noise is None
+            return (
+                np.zeros((12, 32), dtype=np.float32),
+                np.ones((514, 2048), dtype=np.float32),
+            )
+
+    class Processor:
+        def preprocess_batch(self, env_obs, *, num_views, image_size):
+            del env_obs
+            assert (num_views, image_size) == (2, 224)
+            return [
+                {
+                    "rgb_u8": np.zeros((2, 224, 224, 3), dtype=np.uint8),
+                    "token_ids": np.array([1, 2], dtype=np.uint32),
+                    "state": np.zeros(8, dtype=np.float32),
+                }
+            ]
+
+        def postprocess_batch(self, normalized, prepared, *, chunk_len=None):
+            del prepared
+            length = 12 if chunk_len is None else chunk_len
+            return torch.from_numpy(normalized[:, :length, :7])
+
+    cfg = {
+        "action_dim": 7,
+        "num_action_chunks": 12,
+        "openpi": {
+            "config_name": "pi05_flexiv_online_residual",
+            "num_steps": 4,
+            "noise_method": "flow_ode",
+        },
+        "apxinf": {
+            "action_horizon": 12,
+            "num_flow_steps": 4,
+            "return_prefix_hidden_states": True,
+        },
+    }
+    adapter = OpenPIApxInfAdapter(
+        cfg,
+        "cpu",
+        model=Model(),
+        processor=Processor(),
+    )
+
+    actions, result = adapter.predict_action_batch({}, mode="train")
+
+    assert actions.shape == (1, 12, 7)
+    assert result["normalized_actions"].shape == (1, 12, 32)
+    assert result["prefix_hidden_states"].shape == (1, 514, 2048)
+
+
+def test_online_residual_apx_predicts_without_committed_or_decoder(tmp_path):
+    from rlinf.models.embodiment.modules.rlt_token_transformer import RLTTokenEncoder
+    from rlinf.models.embodiment.openpi.apxinf_adapter import (
+        OnlineResidualApxInfAdapter,
+    )
+
+    encoder = RLTTokenEncoder(input_dim=8, embed_dim=8, num_heads=2, prefix_seq_len=16)
+    checkpoint = tmp_path / "encoder.pt"
+    torch.save(encoder.state_dict(), checkpoint)
+
+    class Processor:
+        def postprocess_batch(self, normalized, prepared, *, chunk_len):
+            assert chunk_len == 12
+            return torch.from_numpy(normalized[:, :chunk_len, :7])
+
+    class Base:
+        return_prefix_hidden_states = True
+        metadata = {"backend": "test"}
+        processor = Processor()
+
+        def predict_action_batch(self, obs, *, mode):
+            # No committed argument is supported by the VLA boundary.
+            assert mode == "eval"
+            return None, {
+                "normalized_actions": torch.zeros(1, 12, 32),
+                "prefix_hidden_states": torch.ones(1, 10, 8),
+                "prefix_mask": torch.ones(1, 10, dtype=torch.bool),
+                "prepared": [{"state": np.zeros(8, dtype=np.float32)}],
+                "apxinf_timing": [],
+            }
+
+    adapter = OnlineResidualApxInfAdapter(
+        {
+            "num_action_chunks": 12,
+            "action_dim": 7,
+            "online_residual": {"z_dim": 8, "hidden_dim": 8},
+            "rlt": {
+                "checkpoint": str(checkpoint),
+                "num_heads": 2,
+                "prefix_seq_len": 16,
+            },
+        },
+        "cpu",
+        base=Base(),
+    )
+    actions, info = adapter.predict_action_batch({})
+    changed, candidate = adapter.predict_action_batch({}, committed=torch.ones(1, 6, 7))
+    assert actions.shape == (1, 12, 7)
+    torch.testing.assert_close(changed[:, :6], torch.ones(1, 6, 7))
+    torch.testing.assert_close(changed[:, 6:], actions[:, 6:])
+    assert info["forward_inputs"]["policy_proposal"] is None
+    torch.testing.assert_close(
+        candidate["forward_inputs"]["policy_proposal"][:, :6], torch.ones(1, 6, 7)
+    )
+    assert not hasattr(adapter.rlt_module, "decoder")
+
+
+def test_apxinf_rollout_forwards_real_committed_prefix_only_for_online_policy():
+    from rlinf.workers.rollout.apxinf.apxinf_worker import ApxInfRolloutWorker
+
+    class Adapter:
+        def __init__(self):
+            self.received = None
+
+        def predict_action_batch(self, obs, *, mode, **kwargs):
+            self.received = kwargs
+            return torch.zeros(1, 12, 7), {}
+
+        def close(self):
+            pass
+
+    worker = ApxInfRolloutWorker.__new__(ApxInfRolloutWorker)
+    worker.apxinf_adapter = Adapter()
+    worker.model_cfg = {"online_residual": {"enabled": True}}
+    committed = torch.ones(1, 6, 7)
+    assert worker.predict({"committed": committed}).shape == (1, 12, 7)
+    torch.testing.assert_close(worker.apxinf_adapter.received["committed"], committed)
+
+    worker.model_cfg = {"online_residual": {"enabled": False}}
+    worker.predict({"committed": committed})
+    assert worker.apxinf_adapter.received == {}
+
+
+def test_flexiv_input_transform_preserves_both_camera_views():
+    pytest.importorskip("openpi")
+    from rlinf.models.embodiment.openpi.policies.franka_policy import FrankaEEInputs
+
+    main = np.zeros((224, 224, 3), dtype=np.uint8)
+    wrist = np.full_like(main, 37)
+    observation = {
+        "observation/image": main,
+        "observation/wrist_image": wrist,
+        "observation/state": np.zeros(8),
+    }
+    transformed = FrankaEEInputs(action_dim=32, pad_state=False, use_wrist_image=True)(
+        observation
+    )
+    assert sum(bool(value) for value in transformed["image_mask"].values()) == 2
+    np.testing.assert_array_equal(transformed["image"]["left_wrist_0_rgb"], wrist)
+    assert transformed["state"].shape == (8,)
 
 
 def test_reconstruct_detaches_targets_but_trains_encoder_and_decoder():

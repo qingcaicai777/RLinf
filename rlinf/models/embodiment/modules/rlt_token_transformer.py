@@ -107,6 +107,12 @@ class RLTSelfAttentionLayer(nn.Module):
 class RLTTokenEncoder(nn.Module):
     """Compress VLA prefix embeddings into a single RL token."""
 
+    def encode_flat(
+        self, prefix_embs: torch.Tensor, mask: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        """Expose the standalone encoder without constructing a training decoder."""
+        return self(prefix_embs, mask).reshape(prefix_embs.shape[0], -1)
+
     def __init__(
         self,
         *,
@@ -296,11 +302,8 @@ class RLTTokenDecoder(nn.Module):
         return self.output_proj(x)
 
 
-class RLTTokenTransformer(nn.Module):
-    """RLT encoder with an autoregressive reconstruction objective.
-
-    The single RL token produces a flattened z_rl feature of ``embed_dim``.
-    """
+class ParallelQueryRLTTokenDecoder(nn.Module):
+    """Reconstruct every prefix position in parallel from learned queries."""
 
     def __init__(
         self,
@@ -317,6 +320,82 @@ class RLTTokenTransformer(nn.Module):
         self.input_dim = int(input_dim)
         self.embed_dim = int(embed_dim)
         self.prefix_seq_len = int(prefix_seq_len)
+        self.query_embed = nn.Parameter(
+            sinusoidal_pe_init(self.prefix_seq_len, self.embed_dim)
+        )
+        self.layers = nn.ModuleList(
+            [
+                RLTSelfAttentionLayer(
+                    self.embed_dim,
+                    num_heads=num_heads,
+                    mlp_ratio=mlp_ratio,
+                    dropout_rate=dropout_rate,
+                )
+                for _ in range(num_layers)
+            ]
+        )
+        self.output_proj = nn.Linear(self.embed_dim, self.input_dim)
+
+    def forward(
+        self,
+        rl_tokens: torch.Tensor,
+        target_embeddings: torch.Tensor,
+        mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Use target shape and mask only; target values never enter the decoder."""
+        target_seq_len = target_embeddings.shape[1]
+        if target_seq_len > self.prefix_seq_len:
+            raise ValueError(
+                f"target sequence length {target_seq_len} exceeds configured "
+                f"prefix_seq_len {self.prefix_seq_len}."
+            )
+        batch_size = rl_tokens.shape[0]
+        queries = self.query_embed[:target_seq_len].to(
+            device=rl_tokens.device, dtype=rl_tokens.dtype
+        )
+        queries = queries.unsqueeze(0).expand(batch_size, -1, -1)
+        x = torch.cat([rl_tokens, queries], dim=1)
+        decoder_mask = None
+        if mask is not None:
+            decoder_mask = torch.cat(
+                [
+                    torch.ones(
+                        batch_size,
+                        1,
+                        device=x.device,
+                        dtype=torch.bool,
+                    ),
+                    mask.to(device=x.device, dtype=torch.bool),
+                ],
+                dim=1,
+            )
+        for layer in self.layers:
+            x = layer(x, mask=decoder_mask)
+        return self.output_proj(x[:, 1:])
+
+
+class RLTTokenTransformer(nn.Module):
+    """RLT encoder with a configurable reconstruction objective.
+
+    The single RL token produces a flattened z_rl feature of ``embed_dim``.
+    """
+
+    def __init__(
+        self,
+        *,
+        input_dim: int = 2048,
+        embed_dim: int = 2048,
+        prefix_seq_len: int = 768,
+        num_layers: int = 2,
+        num_heads: int = 8,
+        mlp_ratio: float = 4.0,
+        dropout_rate: float = 0.0,
+        decoder_type: str = "autoregressive",
+    ):
+        super().__init__()
+        self.input_dim = int(input_dim)
+        self.embed_dim = int(embed_dim)
+        self.prefix_seq_len = int(prefix_seq_len)
 
         common_kwargs = {
             "input_dim": self.input_dim,
@@ -328,7 +407,17 @@ class RLTTokenTransformer(nn.Module):
             "dropout_rate": dropout_rate,
         }
         self.encoder = RLTTokenEncoder(**common_kwargs)
-        self.decoder = RLTTokenDecoder(**common_kwargs)
+        decoder_types = {
+            "autoregressive": RLTTokenDecoder,
+            "parallel_query": ParallelQueryRLTTokenDecoder,
+        }
+        if decoder_type not in decoder_types:
+            raise ValueError(
+                "decoder_type must be 'autoregressive' or 'parallel_query'; "
+                f"got {decoder_type!r}."
+            )
+        self.decoder_type = decoder_type
+        self.decoder = decoder_types[decoder_type](**common_kwargs)
 
     @property
     def z_dim(self) -> int:

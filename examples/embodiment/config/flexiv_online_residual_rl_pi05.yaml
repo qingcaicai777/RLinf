@@ -1,0 +1,96 @@
+# Full-horizon model inference; external execution owns asynchronous handoffs.
+# Checkpoint paths must be supplied before running. This is not a Ray RL trainer.
+defaults:
+  - env/realworld_flexiv_online_residual@env.train
+  - env/realworld_flexiv_online_residual@env.eval
+  - override hydra/job_logging: stdout
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+
+runner:
+  task_type: embodied_eval
+  logger:
+    log_path: "../results"
+    project_name: rlinf-flexiv-online-residual
+    experiment_name: "flexiv_online_residual_rl_pi05"
+    logger_backends: ["tensorboard"]
+  only_eval: true
+  max_epochs: 8000
+  max_steps: -1
+  val_check_interval: -1
+  save_interval: 250
+
+online_residual:
+  enabled: true
+  action_representation: "eef_delta"  # Set joint_absolute for 7 joints + gripper.
+  proprio_dim: 8
+  z_dim: 2048
+  inference_horizon: 6
+  actor_horizon: 12
+  td_horizon: 12
+  hidden_dim: 512
+  num_hidden_layers: 3
+  residual_scale: 0.05
+  gamma: 0.99
+  rank_margin: 0.05
+  rank_weight: 50.0
+  actor_margin: 0.0
+  actor_kappa: 0.05
+  relative_q_weight: 1.0
+  ordinary_bc_weight: 5.0
+  human_bc_multiplier: 5.0
+  smooth_weight: 0.0
+  rollout_noise_std: 0.04
+  target_noise_std: 0.04
+  target_noise_clip: 0.10
+  target_tau: 0.005
+  critic_updates_per_transition: 5
+  critic_updates_per_actor_update: 5
+  actor_lr: 1.0e-4
+  critic_lr: 3.0e-4
+  max_grad_norm: 1.0
+  replay_capacity: 200000
+  recent_sample_window: 10000
+  critic_warmup_updates: 100
+  actor_publish_interval: 10
+  checkpoint_interval: 250
+
+rollout:
+  group_name: "RolloutGroup"
+  rollout_backend: "apxinf"
+  pipeline_stage_num: 1
+  model:
+    model_type: "openpi"
+    model_path: "/path/to/pi05_base_openpi_rlinf"
+    precision: "bf16"
+    # APX computes the complete 32-step VLA chunk. The residual controller
+    # consumes the first 12 steps and the external executor discards 20.
+    num_action_chunks: 32
+    action_dim: 7
+    openpi:
+      config_name: "pi05_flexiv_online_residual"
+      num_steps: 10
+      noise_method: "flow_ode"
+    openpi_data:
+      norm_stats_path: "/path/to/flexiv_delta_assets/norm_stats.json"
+    apxinf:
+      checkpoint: "/path/to/APXinf-robo-checkpoint/model.safetensors"
+      action_horizon: 32
+      num_flow_steps: 10
+      num_views: 2
+      return_prefix_hidden_states: true
+    online_residual: ${online_residual}
+    rlt:
+      checkpoint: "/path/to/flexiv_stage1_sft_checkpoint/pytorch_model.bin"
+      prefix_seq_len: 1024
+      decoder_type: "parallel_query"
+    actor_checkpoint: "/path/to/flexiv_online_residual_actor.pt"
+
+cluster:
+  num_nodes: 1
+  component_placement:
+    rollout: 0-0
+    env: 0-0

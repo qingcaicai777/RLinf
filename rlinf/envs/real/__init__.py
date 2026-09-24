@@ -35,6 +35,7 @@ __all__ = ["RealWorldEnv", "load_tasks"]
 _ROBOT_PACKAGES = (
     ".dosw1",
     ".franka",
+    ".flexiv",
     ".gim_arm",
     ".piper",
     ".so101",

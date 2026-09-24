@@ -1,7 +1,7 @@
 RL with Real-World Robots
 =========================
 
-Use this section when your starting point is physical robot hardware. Start with Franka if you use a Franka arm or a Franka-based rig; use the other robot pages for GimArm, XSquare Turtle2, Dexmal DOS-W1, AgileX Piper, and SO101.
+Use this section when your starting point is physical robot hardware. Start with Franka if you use a Franka arm or a Franka-based rig; use the other robot pages for Flexiv, GimArm, XSquare Turtle2, Dexmal DOS-W1, AgileX Piper, and SO101.
 
 Choose a guide for hardware checks, teleoperation, data collection, sim-to-real transfer, deployment, or online RL.
 
@@ -93,3 +93,4 @@ Use these guides to connect an arm and run its hardware test script. Piper and S
    DOS-W1 <embodied/dosw1>
    Piper <embodied/piper>
    SO101 <embodied/so101>
+   Flexiv PI0.5 RTC <embodied/flexiv_pi05_rtc>
