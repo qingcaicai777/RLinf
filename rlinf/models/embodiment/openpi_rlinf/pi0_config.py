@@ -33,12 +33,18 @@ class Pi0Config:
     action_dim: int = 32
     action_horizon: int = 50
     max_token_len: int = 48
+    num_images_in_input: int = 3
 
     pi05: bool = False
     discrete_state_input: bool | None = None
     pcd: bool = False
 
     def __post_init__(self):
+        if not 0 < self.num_images_in_input <= 3:
+            raise ValueError(
+                "num_images_in_input must be between 1 and 3, got "
+                f"{self.num_images_in_input}"
+            )
         if self.pi05 and self.max_token_len == 48:
             object.__setattr__(self, "max_token_len", 200)
         if self.discrete_state_input is None:

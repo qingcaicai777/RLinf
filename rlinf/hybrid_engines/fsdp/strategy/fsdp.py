@@ -69,6 +69,10 @@ class FSDPStrategy(FSDPStrategyBase):
                 handles.append(inner_handle)
         return handles
 
+    @classmethod
+    def _has_sharded_handles(cls, model: FSDP) -> bool:
+        return any(handle.uses_sharded_strategy for handle in cls._iter_fsdp_handles(model))
+
     @staticmethod
     def _move_tensor(
         tensor: torch.Tensor | None, device: torch.device | str
@@ -126,10 +130,16 @@ class FSDPStrategy(FSDPStrategyBase):
             )
 
     def _rebind_handle_views(self, handle) -> None:
-        if handle._use_orig_params:
+        if handle.uses_sharded_strategy:
+            # FSDP owns the parameter objects and knows how to preserve their
+            # flattened local views. Calling the internal helper is safe once
+            # ``flat_param.data`` is the actual local shard (see the offload
+            # loops below), and avoids losing Conv/Linear parameter metadata.
             handle._use_sharded_views()
-            return
-        self._rebind_sharded_tensor_views(handle)
+        elif handle._use_orig_params:
+            handle._use_unsharded_views(as_params=True)
+        else:
+            self._rebind_sharded_tensor_views(handle)
 
     def wrap_model(self, model: nn.Module, device_mesh: DeviceMesh) -> FSDP:
         """
@@ -216,16 +226,23 @@ class FSDPStrategy(FSDPStrategyBase):
             - model (FSDP): The FSDP wrapped model.
             - offload_grad (bool): Whether to offload gradients or not.
         """
+        # Moving FlatParameter storage behind FSDP's lifecycle leaves nested
+        # handles in a sharded-view state that can expose a 1-D local shard to
+        # Conv2d/Linear on the next forward. FSDP already reshares parameters
+        # after each module; keep parameter storage managed by FSDP whenever a
+        # sharded handle is present. Optimizer state can still be offloaded.
+        if self._has_sharded_handles(model):
+            return
+
         for handle in self._iter_fsdp_handles(model):
             flat_param = handle.flat_param
 
             if hasattr(flat_param, "_local_shard"):
-                flat_param._local_shard = self._move_tensor(
-                    flat_param._local_shard, "cpu"
-                )
-            flat_param.data = self._move_tensor(flat_param.data, "cpu")
-            if hasattr(flat_param, "_local_shard") and flat_param.data is not None:
-                flat_param._local_shard = flat_param.data
+                local_shard = self._move_tensor(flat_param._local_shard, "cpu")
+                flat_param._local_shard = local_shard
+                flat_param.data = local_shard
+            else:
+                flat_param.data = self._move_tensor(flat_param.data, "cpu")
 
             if offload_grad:
                 flat_param.grad = self._move_tensor(flat_param.grad, "cpu")
@@ -266,16 +283,18 @@ class FSDPStrategy(FSDPStrategyBase):
             - onload_grad (bool): Whether to load gradients or not.
 
         """
+        if self._has_sharded_handles(model):
+            return
+
         for handle in self._iter_fsdp_handles(model):
             flat_param = handle.flat_param
 
             if hasattr(flat_param, "_local_shard"):
-                flat_param._local_shard = self._move_tensor(
-                    flat_param._local_shard, device
-                )
-            flat_param.data = self._move_tensor(flat_param.data, device)
-            if hasattr(flat_param, "_local_shard") and flat_param.data is not None:
-                flat_param._local_shard = flat_param.data
+                local_shard = self._move_tensor(flat_param._local_shard, device)
+                flat_param._local_shard = local_shard
+                flat_param.data = local_shard
+            else:
+                flat_param.data = self._move_tensor(flat_param.data, device)
 
             if onload_grad:
                 flat_param.grad = self._move_tensor(flat_param.grad, device)

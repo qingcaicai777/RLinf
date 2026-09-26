@@ -250,13 +250,12 @@ class SigLIPViT(nn.Module):
         # --- Stem + pos_embed in float32 (matching JAX) ---
         # image is (B, H, W, C) -> (B, C, H, W)
         x = image.permute(0, 3, 1, 2)
-        x = F.conv2d(
-            x.float(),
-            self.stem.weight.float(),
-            None if self.stem.bias is None else self.stem.bias.float(),
-            stride=self.stem.stride,
-            padding=self.stem.padding,
-        )
+        # Call the stem module instead of reading its parameters directly.
+        # Under nested FSDP, direct ``self.stem.weight`` access bypasses the
+        # stem handle's pre-forward all-gather and exposes a 1-D local shard
+        # to ``conv2d``. The stem is intentionally fp32, so this preserves the
+        # original computation while allowing FSDP to manage its views.
+        x = self.stem(x.float())
         B, C, h, w = x.shape
         x = x.reshape(B, C, h * w).permute(0, 2, 1)  # (B, h*w, width)
 

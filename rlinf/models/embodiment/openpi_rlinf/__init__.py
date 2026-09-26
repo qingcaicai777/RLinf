@@ -98,6 +98,10 @@ def get_model(cfg: Any, torch_dtype: Any = None) -> Any:
     max_token_len = OmegaConf.select(model_cfg, "max_token_len", default=None)
     if max_token_len is not None:
         pi0_kwargs["max_token_len"] = int(max_token_len)
+    num_images_in_input = OmegaConf.select(
+        model_cfg, "num_images_in_input", default=3
+    )
+    pi0_kwargs["num_images_in_input"] = int(num_images_in_input)
 
     pi0_config = Pi0Config(**pi0_kwargs)
     rlt_cfg = build_rlt_config(model_cfg)

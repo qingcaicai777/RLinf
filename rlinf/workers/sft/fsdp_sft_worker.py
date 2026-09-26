@@ -134,87 +134,106 @@ class FSDPSftWorker(FSDPModelManager, Worker):
         eval_data_iter = iter(self.eval_data_loader)
 
         with self.worker_timer():
-            eval_step = len(eval_data_iter)
-            eval_pbar = tqdm(
-                initial=0,
-                total=eval_step,
-                desc="Evaluate Step",
-                dynamic_ncols=True,
-            )
-            self.model.eval()
-            total = eval_step * self.eval_batch_size
-            correct = 0
+            if self.cfg.actor.get("enable_offload", False):
+                with self.device_lock:
+                    self.load_param_and_grad(self.device)
 
-            # get the next batch
-            for _ in range(eval_step):
-                correct += self.get_eval_model_output(next(eval_data_iter))
-                eval_pbar.update(1)
+            try:
+                eval_step = len(eval_data_iter)
+                eval_pbar = tqdm(
+                    initial=0,
+                    total=eval_step,
+                    desc="Evaluate Step",
+                    dynamic_ncols=True,
+                )
+                self.model.eval()
+                total = eval_step * self.eval_batch_size
+                correct = 0
 
-            metrics = {
-                "eval_accuracy": float(correct / max(1, total)),
-            }
-            metrics = all_reduce_dict(metrics, op=torch.distributed.ReduceOp.AVG)
-            return metrics
+                # get the next batch
+                for _ in range(eval_step):
+                    correct += self.get_eval_model_output(next(eval_data_iter))
+                    eval_pbar.update(1)
+
+                metrics = {
+                    "eval_accuracy": float(correct / max(1, total)),
+                }
+                return all_reduce_dict(metrics, op=torch.distributed.ReduceOp.AVG)
+            finally:
+                if self.cfg.actor.get("enable_offload", False):
+                    with self.device_lock:
+                        self.offload_param_and_grad()
 
     def run_training(self):
         with self.worker_timer():
-            self.model.train()
+            if self.cfg.actor.get("enable_offload", False):
+                with self.device_lock:
+                    self.load_param_and_grad(self.device)
+                    self.load_optimizer(self.device)
 
-            metrics = {}
+            try:
+                self.model.train()
 
-            for idx in range(self.gradient_accumulation):
-                # set the gradient accumulation backward_ctx
-                backward_ctx = self.before_micro_batch(
-                    self.model,
-                    is_last_micro_batch=(idx + 1) == self.gradient_accumulation,
+                metrics = {}
+
+                for idx in range(self.gradient_accumulation):
+                    # set the gradient accumulation backward_ctx
+                    backward_ctx = self.before_micro_batch(
+                        self.model,
+                        is_last_micro_batch=(idx + 1) == self.gradient_accumulation,
+                    )
+
+                    try:
+                        batch = next(self.data_iter)
+                        self._data_iter_offset += 1
+                    except StopIteration:
+                        self._data_epoch += 1
+                        logging.info(
+                            f"[INFO] data_iter exhausted, reset iterator self._data_epoch {self._data_epoch}"
+                        )
+                        forward_set_epoch(self.data_loader, self._data_epoch)
+                        self.data_iter = iter(self.data_loader)
+                        batch = next(self.data_iter)
+                        self._data_iter_offset = 1
+
+                    loss, step_metrics = self.get_train_model_output(batch)
+                    append_to_dict(metrics, step_metrics)
+
+                    loss = loss / self.gradient_accumulation
+                    with backward_ctx:
+                        self.grad_scaler.scale(loss).backward()
+
+                # in one step do the optimizer step
+                grad_norm, lr_list = self.optimizer_step()
+                self.optimizer.zero_grad(set_to_none=True)
+
+                self.lr_scheduler.step()
+                lr_value = self.optimizer.param_groups[0]["lr"]
+                grad_norm_value = (
+                    float(grad_norm)
+                    if isinstance(grad_norm, torch.Tensor)
+                    else grad_norm
+                )
+                append_to_dict(
+                    metrics,
+                    {
+                        "learning_rate": lr_value,
+                        "grad_norm": grad_norm_value,
+                    },
                 )
 
-                try:
-                    batch = next(self.data_iter)
-                    self._data_iter_offset += 1
-                except StopIteration:
-                    self._data_epoch += 1
-                    logging.info(
-                        f"[INFO] data_iter exhausted, reset iterator self._data_epoch {self._data_epoch}"
-                    )
-                    forward_set_epoch(self.data_loader, self._data_epoch)
-                    self.data_iter = iter(self.data_loader)
-                    batch = next(self.data_iter)
-                    self._data_iter_offset = 1
+                if self.global_step > 0 and self.global_step % 1000 == 0:
+                    clear_memory()
 
-                loss, step_metrics = self.get_train_model_output(batch)
-                append_to_dict(metrics, step_metrics)
-
-                loss = loss / self.gradient_accumulation
-                with backward_ctx:
-                    self.grad_scaler.scale(loss).backward()
-
-            # in one step do the optimizer step
-            grad_norm, lr_list = self.optimizer_step()
-            self.optimizer.zero_grad(set_to_none=True)
-
-            self.lr_scheduler.step()
-            lr_value = self.optimizer.param_groups[0]["lr"]
-            grad_norm_value = (
-                float(grad_norm) if isinstance(grad_norm, torch.Tensor) else grad_norm
-            )
-            append_to_dict(
-                metrics,
-                {
-                    "learning_rate": lr_value,
-                    "grad_norm": grad_norm_value,
-                },
-            )
-
-            if self.global_step > 0 and self.global_step % 1000 == 0:
-                clear_memory()
-
-            train_metrics = {key: np.mean(value) for key, value in metrics.items()}
-            train_metrics = all_reduce_dict(
-                train_metrics, op=torch.distributed.ReduceOp.AVG
-            )
-
-            return train_metrics
+                train_metrics = {key: np.mean(value) for key, value in metrics.items()}
+                return all_reduce_dict(
+                    train_metrics, op=torch.distributed.ReduceOp.AVG
+                )
+            finally:
+                if self.cfg.actor.get("enable_offload", False):
+                    with self.device_lock:
+                        self.offload_param_and_grad()
+                        self.offload_optimizer()
 
     @abstractmethod
     def build_dataloader(self):

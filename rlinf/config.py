@@ -535,11 +535,15 @@ def validate_fsdp_cfg(cfg: DictConfig) -> DictConfig:
             sharding = (
                 str(cfg.fsdp_config.sharding_strategy).strip().lower().replace("-", "_")
             )
-            assert sharding == "no_shard", (
-                "openpi_rlinf only supports actor.fsdp_config.sharding_strategy="
-                f"'no_shard' (got {cfg.fsdp_config.sharding_strategy!r}). "
-                "Nested FSDP flattening (full_shard / shard_grad_op) is not supported."
-            )
+            if sharding not in {"no_shard", "full_shard", "shard_grad_op"}:
+                raise ValueError(
+                    "openpi_rlinf actor.fsdp_config.sharding_strategy must be "
+                    "'no_shard', 'full_shard', or 'shard_grad_op'"
+                )
+            if sharding != "no_shard" and not cfg.fsdp_config.use_orig_params:
+                raise ValueError(
+                    "openpi_rlinf sharded FSDP requires use_orig_params=true"
+                )
 
         cfg.fsdp_config.forward_prefetch = cfg.fsdp_config.get(
             "forward_prefetch", False

@@ -36,7 +36,7 @@ data:
 actor:
   group_name: "ActorGroup"
   training_backend: "fsdp"
-  enable_offload: true
+  enable_offload: false
   micro_batch_size: 16
   global_batch_size: 64
   seed: 42
@@ -96,7 +96,7 @@ actor:
     min_lr: 2.5e-6
   fsdp_config:
     strategy: "fsdp"
-    sharding_strategy: "no_shard"
+    sharding_strategy: "full_shard"
     use_orig_params: true
     save_full_model_weights: true
     gradient_checkpointing: true

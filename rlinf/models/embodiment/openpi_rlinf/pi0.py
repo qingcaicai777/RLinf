@@ -207,14 +207,21 @@ class Pi0(model.BaseModel):
         # concatenates ``list(observation.images.values())``.
         image_names = [name for name in model.IMAGE_KEYS if name in obs.images]
         image_names.extend(name for name in obs.images if name not in model.IMAGE_KEYS)
-        for name in image_names:
+        for image_index, name in enumerate(image_names):
             image_tokens, _ = self.img(obs.images[name])  # (B, num_patches, width)
             tokens.append(image_tokens)
 
             # Image tokens use bidirectional attention
+            image_mask = obs.image_masks[name]
+            # Keep the fixed three-camera token layout used by Pi0.5, but make
+            # cameras beyond num_images_in_input invisible to every attention
+            # query. This mirrors OpenPI's image mask semantics while allowing
+            # the model to retain a stable parameter/input shape.
+            if image_index >= self.config.num_images_in_input:
+                image_mask = torch.zeros_like(image_mask, dtype=torch.bool)
             input_mask.append(
                 einops.repeat(
-                    obs.image_masks[name], "b -> b s", s=image_tokens.shape[1]
+                    image_mask, "b -> b s", s=image_tokens.shape[1]
                 )
             )
             ar_mask += [False] * image_tokens.shape[1]
@@ -591,6 +598,7 @@ class Pi0(model.BaseModel):
             action_dim=self.action_dim,
             action_env_dim=self.action_env_dim,
             config_name=config_name,
+            num_images_in_input=self._config.num_images_in_input,
         )
         self.rlt_cfg = rlt_cfg or OpenPiPytorchRLTConfig()
         if self.rlt_cfg.use_rlt:
@@ -611,7 +619,19 @@ class Pi0(model.BaseModel):
 
     @property
     def device(self) -> torch.device:
-        return next(self.parameters()).device
+        # Nested FSDP can temporarily hide original parameters while a shard is
+        # being released or reloaded. Device lookup is only an execution
+        # convenience, so fall back to a buffer or the worker's current CUDA
+        # device instead of failing with StopIteration.
+        parameter = next(self.parameters(), None)
+        if parameter is not None:
+            return parameter.device
+        buffer = next(self.buffers(), None)
+        if buffer is not None:
+            return buffer.device
+        if torch.cuda.is_available():
+            return torch.device("cuda", torch.cuda.current_device())
+        return torch.device("cpu")
 
     @property
     def _no_split_modules(self) -> list[str] | None:
@@ -827,8 +847,6 @@ class Pi0(model.BaseModel):
     ) -> torch.Tensor | dict[str, torch.Tensor]:
         """Flow-matching SFT loss. Shared by SFT, DAgger, and PPO co-train."""
         del kwargs
-        if hasattr(self, "gradient_checkpointing_disable"):
-            self.gradient_checkpointing_disable()
         observation, actions = self._unpack_sft_batch(data)
         observation = self._observation_to_device(observation)
         actions = self._actions_to_device(actions)

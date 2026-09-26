@@ -145,6 +145,56 @@ def _resolve_module_classes_to_wrap(module, module_classes_to_wrap):
     return resolved_module_classes
 
 
+def _openpi_dtype_safe_policy(module: torch.nn.Module, recurse: bool, nonwrapped_numel: int) -> bool:
+    """Wrap OpenPI leaves without putting its intentional dtype islands together.
+
+    OpenPI keeps selected SigLIP and Gemma norm parameters in fp32 while the
+    surrounding projections are bf16. FSDP1 flattens all parameters left at a
+    wrapper boundary, so a normal root/size policy can create an invalid
+    mixed-dtype FlatParameter. The model marks the natural transformer leaves;
+    this policy wraps those leaves and only wraps a parent when all parameters
+    remaining at that boundary have one dtype.
+    """
+    # FSDP calls the policy twice: once before descending and once with the
+    # parameters left after wrapped children have been replaced. For OpenPI we
+    # must always descend through a container; otherwise its residual fp32
+    # parameters are flattened together with bf16 children.
+    # ``nn.MultiheadAttention`` calls ``multi_head_attention_forward`` with
+    # raw projection tensors internally. Wrapping ``out_proj`` separately
+    # leaves that tensor sharded when the parent attention module executes.
+    # Keep the complete attention module atomic so its own FSDP hook gathers
+    # every projection before the functional call.
+    if getattr(module, "_fsdp_atomic_child", False):
+        return False
+    if getattr(module, "_fsdp_atomic_parent", False):
+        if recurse:
+            return bool(list(module.children()))
+        return len({p.dtype for p in module.parameters() if p.numel()}) == 1
+    if isinstance(module, torch.nn.MultiheadAttention):
+        return bool(list(module.children())) if recurse else bool(
+            len({p.dtype for p in module.parameters() if p.numel()}) == 1
+        )
+
+    if recurse:
+        # Always visit children.  In particular, a module such as ``Block``
+        # contains both bf16 projections and fp32 RMSNorm parameters; stopping
+        # recursion at that boundary makes the root FSDP instance flatten the
+        # two dtype islands together.
+        return bool(list(module.children()))
+
+    params = list(module.parameters(recurse=False))
+    dtypes = {p.dtype for p in params if p.numel()}
+    if not dtypes:
+        return False
+    # ``nonwrapped_numel`` is the number of parameters left after recursive
+    # children have been wrapped.  A marked container can therefore be safely
+    # wrapped only when its *direct* parameters are uniform.  For unmarked
+    # leaves, wrapping a uniform parameter module is also necessary: Linear,
+    # Embedding and attention projections are not all named in ``_no_split``.
+    # Leaving them for the root creates a mixed-dtype catch-all handle.
+    return len(dtypes) == 1
+
+
 def _fsdp2_fully_shard_supports_ignored_params() -> bool:
     """Whether :func:`fully_shard` accepts ``ignored_params`` (PyTorch 2.7+)."""
     try:
@@ -191,6 +241,21 @@ def get_fsdp_wrap_policy(module, config=None, is_lora=False, model_type=None):
     """
     if config is None:
         config = {}
+
+    if str(model_type).lower() == SupportedModel.OPENPI_RLINF.value:
+        # torch.nn.MultiheadAttention calls the functional API with raw
+        # projection tensors. Mark its descendants so the parent attention
+        # module owns all projection parameters in one FSDP handle.
+        for attention in module.modules():
+            if isinstance(attention, torch.nn.MultiheadAttention):
+                for child in attention.children():
+                    setattr(child, "_fsdp_atomic_child", True)
+        for embedder in module.modules():
+            if embedder.__class__.__name__ == "Embedder":
+                setattr(embedder, "_fsdp_atomic_parent", True)
+                for child in embedder.children():
+                    setattr(child, "_fsdp_atomic_child", True)
+        return _openpi_dtype_safe_policy
 
     if config.get("disable", False):
         return None
