@@ -27,6 +27,7 @@ from rlinf.envs.real.flexiv.rtc_adapter import (
     FlexivRTCAdapter,
     FlexivRTCConfig,
     compose_tcp_target,
+    tcp_delta_from_target,
 )
 from rlinf.models.embodiment.openpi.rtc.policy import PI05PolicyAdapter, PI05PolicySpec
 from rlinf.models.embodiment.openpi.rtc.runtime import (
@@ -420,6 +421,17 @@ def test_flexiv_delta_overwrites_target_from_one_chunk_reference() -> None:
     )
 
 
+def test_flexiv_world_delta_round_trips_nonidentity_tcp_rotation() -> None:
+    config = _flexiv_config(enable_tcp_delta_limits=False)
+    quat = Rotation.from_euler("z", 90, degrees=True).as_quat()
+    reference = np.array([0.5, 0.0, 0.25, quat[3], *quat[:3]])
+    delta = np.array([0.02, -0.01, 0.003, 0.01, -0.02, 0.03])
+    target = compose_tcp_target(reference, delta, config)
+    np.testing.assert_allclose(
+        tcp_delta_from_target(reference, target, config), delta, atol=1e-7
+    )
+
+
 def test_flexiv_gripper_is_independent_and_close_is_idempotent() -> None:
     adapter = FlexivRTCAdapter(_flexiv_config())
     reference = np.array([0.5, 0.0, 0.25, 1.0, 0.0, 0.0, 0.0])
@@ -435,3 +447,114 @@ def test_flexiv_gripper_is_independent_and_close_is_idempotent() -> None:
     finally:
         adapter.close()
         adapter.close()
+
+
+def test_flexiv_committed_projection_matches_physical_delta_limits() -> None:
+    adapter = FlexivRTCAdapter(_flexiv_config())
+    projected = adapter.project_policy_actions(
+        np.array([[0.02, 0.0, 0.0, 0.0, 0.0, 0.2, 1.5]])
+    )
+    np.testing.assert_allclose(projected[0], [0.01, 0, 0, 0, 0, 0.1, 1.0])
+
+
+def test_flexiv_realtime_receipt_is_the_final_accepted_delta() -> None:
+    adapter = FlexivRTCAdapter(_flexiv_config())
+    reference = np.array([0.5, 0.0, 0.25, 1.0, 0.0, 0.0, 0.0])
+    adapter.start()
+    try:
+        receipt = adapter.apply_policy_action(
+            PhysicalActionStep(np.array([0.02, 0, 0, 0, 0, 0.2]), 1.0, 0, 0, reference)
+        )
+        np.testing.assert_allclose(
+            receipt["action_receipt_physical"], [0.01, 0, 0, 0, 0, 0.1, 1]
+        )
+        assert not receipt["human_mask"].any()
+        np.testing.assert_allclose(receipt["tcp_target_pose"][:3], [0.51, 0, 0.25])
+        np.testing.assert_allclose(adapter.read_tcp_pose()[:3], [0.51, 0, 0.25])
+    finally:
+        adapter.close()
+
+
+def test_flexiv_realtime_intervention_receipt_uses_chunk_reference() -> None:
+    config = _flexiv_config(enable_tcp_delta_limits=False)
+    adapter = FlexivRTCAdapter(config)
+    reference = np.array([0.5, 0.0, 0.25, 1.0, 0.0, 0.0, 0.0])
+
+    class Override:
+        def read(self, env, command):
+            del env, command
+            mask = np.array([True] * 6 + [False])
+            return type(
+                "Sample",
+                (),
+                {
+                    "active": True,
+                    "action": np.array([0.02, 0, 0, 0, 0, 0, 1.0]),
+                    "info": {"teleop_action_mask": mask},
+                },
+            )()
+
+        def close(self):
+            pass
+
+    adapter.start()
+    try:
+        adapter.apply_policy_action(
+            PhysicalActionStep(np.array([0.01, 0, 0, 0, 0, 0]), 1.0, 0, 0, reference)
+        )
+        adapter.read_tcp_pose()
+        adapter._intervention = Override()
+        receipt = adapter.apply_policy_action(
+            PhysicalActionStep(np.array([0.015, 0, 0, 0, 0, 0]), 1.0, 0, 1, reference)
+        )
+        np.testing.assert_allclose(adapter.read_tcp_pose()[:3], [0.53, 0, 0.25])
+        np.testing.assert_allclose(
+            receipt["action_receipt_physical"][:6], [0.03, 0, 0, 0, 0, 0]
+        )
+        assert np.flatnonzero(receipt["human_mask"]).tolist() == [0]
+        np.testing.assert_array_equal(receipt["pair_mask"], receipt["human_mask"])
+        np.testing.assert_allclose(
+            tcp_delta_from_target(reference, adapter.read_tcp_pose(), config),
+            receipt["action_receipt_physical"][:6],
+        )
+    finally:
+        adapter.close()
+
+
+def test_flexiv_stop_closes_leader_before_executor_shutdown(monkeypatch) -> None:
+    from rlinf.envs.real.flexiv.base import FlexivEnv
+    from rlinf.envs.real.flexiv.leader_drag import LeaderDragInterventionSource
+
+    events = []
+
+    class Source:
+        config = type("Config", (), {"control_hz": 30.0})()
+
+        def start(self):
+            pass
+
+        def set_enabled(self, enabled):
+            del enabled
+
+        def poll(self, now_ns):
+            del now_ns
+            return None
+
+        def close(self):
+            events.append("leader-stop")
+
+    source = Source()
+    monkeypatch.setattr(
+        LeaderDragInterventionSource,
+        "connect",
+        lambda *args, **kwargs: source,
+    )
+    monkeypatch.setattr(
+        FlexivEnv, "stop_realtime", lambda self: events.append("follower-stop")
+    )
+    adapter = FlexivRTCAdapter(_flexiv_config(leader_serial="leader"))
+    adapter.start()
+    adapter.stop()
+    adapter.stop()
+    adapter.close()
+    assert events == ["follower-stop", "leader-stop"]

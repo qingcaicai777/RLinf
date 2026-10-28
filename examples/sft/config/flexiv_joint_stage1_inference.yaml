@@ -1,0 +1,41 @@
+# Inference-only architecture recipe for joint_abs_1007, not a dataset loader.
+actor:
+  model:
+    model_type: "openpi_rlinf"
+    model_path: "/path/to/pi05_base_openpi_rlinf"
+    is_lora: false
+    # Match the 32-step model horizon; the server owns execution slicing.
+    num_action_chunks: 32
+    action_dim: 8
+    add_value_head: false
+    num_steps: 4
+    openpi_data:
+      repo_id: "flexiv_joint_absolute"
+      # Frozen statistics shipped with joint_abs_1007: absolute radians + width.
+      norm_stats_path: "/home/qccc/checkpoints/myq/joint_abs_1007/flexiv_joint_assets/norm_stats.json"
+    openpi:
+      task: sft
+      config_name: "pi05_flexiv_joint_absolute"
+      num_images_in_input: 2
+      train_expert_only: false
+      action_horizon: 32
+      action_chunk: 32
+      action_env_dim: 8
+      num_steps: 4
+      model_action_dim: 32
+      paligemma_variant: "gemma_2b"
+      action_expert_variant: "gemma_300m"
+      max_token_len: 200
+      discrete_state_input: true
+      use_rlt: true
+      rlt_alpha: 1.0
+      rlt_input_dim: 2048
+      rlt_embed_dim: 2048
+      rlt_prefix_seq_len: 1024
+      rlt_num_layers: 2
+      rlt_num_heads: 8
+      rlt_mlp_ratio: 4.0
+      rlt_image_only: false
+      rlt_use_mask: true
+      rlt_decoder_type: "parallel_query"
+      rlt_normalized_actions: true

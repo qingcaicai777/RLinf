@@ -22,6 +22,7 @@ only resized uint8 RGB views, token ids and optional flow noise through its L1
 from __future__ import annotations
 
 import dataclasses
+import os
 import pathlib
 import time
 from collections.abc import Mapping
@@ -36,6 +37,24 @@ def _to_numpy(value: Any) -> np.ndarray:
     if torch.is_tensor(value):
         value = value.detach().cpu().numpy()
     return np.ascontiguousarray(value)
+
+
+def _normalize_cuda_prefix(
+    prefix_view: Any, scale_view: Any, eps: float
+) -> torch.Tensor:
+    """Normalize APX BF16 CUDA views without staging prefix values on the host."""
+    prefix = torch.as_tensor(prefix_view).view(torch.bfloat16).float()
+    scale = torch.as_tensor(scale_view).view(torch.bfloat16).float()
+    if prefix.ndim != 2 or scale.shape != (prefix.shape[-1],):
+        raise ValueError("ApxInf CUDA prefix and RMSNorm scale shapes disagree.")
+    normalized = torch.nn.functional.rms_norm(
+        prefix, (prefix.shape[-1],), weight=scale, eps=eps
+    )
+    # The finite check also synchronizes PyTorch's stream before its zero-copy
+    # views can release the APX-owned CUDA allocations.
+    if not bool(torch.isfinite(normalized).all()):
+        raise FloatingPointError("ApxInf returned non-finite CUDA prefix features")
+    return normalized
 
 
 def _batch_size(env_obs: Mapping[str, Any]) -> int:
@@ -349,6 +368,7 @@ class OpenPIApxInfAdapter:
 
         self._validate_config()
         self.model = model if model is not None else self._load_model()
+        self._closed = False
         self.processor = (
             processor if processor is not None else _RLInfOpenPITransforms(model_cfg)
         )
@@ -392,12 +412,6 @@ class OpenPIApxInfAdapter:
                 "The ApxInf bare-model adapter currently supports PI0.5 OpenPI "
                 f"configs; got {config_name!r}"
             )
-        configured_steps = int(openpi_cfg.get("num_steps", self.num_flow_steps))
-        if configured_steps != self.num_flow_steps:
-            raise ValueError(
-                "ApxInf num_flow_steps must match OpenPI num_steps for parity; "
-                f"got {self.num_flow_steps} and {configured_steps}"
-            )
         noise_method = str(openpi_cfg.get("noise_method", "flow_ode"))
         if noise_method not in {"flow_ode", "flow_sde"}:
             raise ValueError(
@@ -407,12 +421,17 @@ class OpenPIApxInfAdapter:
             )
 
     def _load_model(self):
+        if bool(self.apxinf_cfg.get("disable_fa2_splitkv", False)):
+            # The Flexiv SM89 deployment has produced non-finite actions with
+            # split-KV enabled, so select regular FA2 before model loading.
+            os.environ.setdefault("APXINF_DISABLE_FA2_SPLITKV", "1")
         try:
             import apxinf_py
         except ImportError as error:
             raise ImportError(
-                "apxinf_py is not importable in the rollout worker. Install the "
-                "official infinigence/ApxInf CUDA Python binding."
+                "apxinf_py is not importable. Build the vendored "
+                "APXinf-robo/apxinf/crates/apxinf-py binding with maturin "
+                "--features cuda and install its wheel in this Python environment."
             ) from error
 
         model_path = self.model_cfg.get("model_path")
@@ -467,6 +486,11 @@ class OpenPIApxInfAdapter:
             )
         if int(self.model.action_dim) <= 0:
             raise ValueError("ApxInf loaded an invalid model action dimension")
+        if int(self.model.action_dim) < self.action_dim:
+            raise ValueError(
+                "ApxInf model action dimension is smaller than the configured "
+                "physical action width"
+            )
         if int(self.model.num_views) <= 0:
             raise ValueError("ApxInf loaded an invalid camera-view count")
 
@@ -518,11 +542,18 @@ class OpenPIApxInfAdapter:
 
             started = time.perf_counter()
             if self.return_prefix_hidden_states:
-                inference = getattr(self.model, "infer_rgb_with_prefix", None)
+                inference = (
+                    getattr(self.model, "infer_rgb_with_prefix_cuda", None)
+                    if str(self.apxinf_cfg.get("precision", "bf16")) == "bf16"
+                    else None
+                )
+                cuda_prefix = callable(inference)
+                if not cuda_prefix:
+                    inference = getattr(self.model, "infer_rgb_with_prefix", None)
                 if not callable(inference):
                     raise RuntimeError(
                         "ApxInf prefix output was requested, but the loaded binding "
-                        "does not expose infer_rgb_with_prefix()."
+                        "does not expose a prefix inference API."
                     )
             else:
                 inference = self.model.infer_rgb
@@ -533,13 +564,17 @@ class OpenPIApxInfAdapter:
                 noise=noise,
             )
             if self.return_prefix_hidden_states:
-                raw_output, prefix = raw_output
-                prefix = np.asarray(prefix, dtype=np.float32)
-                if prefix.ndim != 2 or not np.isfinite(prefix).all():
-                    raise ValueError(
-                        "ApxInf prefix hidden states must be finite rank-2 arrays; "
-                        f"got {prefix.shape}."
-                    )
+                if cuda_prefix:
+                    raw_output, prefix_view, scale_view, eps = raw_output
+                    prefix = _normalize_cuda_prefix(prefix_view, scale_view, eps)
+                else:
+                    raw_output, prefix = raw_output
+                    prefix = np.asarray(prefix, dtype=np.float32)
+                    if prefix.ndim != 2 or not np.isfinite(prefix).all():
+                        raise ValueError(
+                            "ApxInf prefix hidden states must be finite rank-2 arrays; "
+                            f"got {prefix.shape}."
+                        )
                 prefix_rows.append(prefix)
             normalized = np.asarray(raw_output, dtype=np.float32)
             model_ms = (time.perf_counter() - started) * 1000.0
@@ -565,26 +600,51 @@ class OpenPIApxInfAdapter:
         }
         if prefix_rows:
             lengths = [row.shape[0] for row in prefix_rows]
-            hidden = np.zeros(
-                (len(prefix_rows), max(lengths), prefix_rows[0].shape[1]),
-                dtype=np.float32,
+            first = prefix_rows[0]
+            hidden = torch.zeros(
+                len(prefix_rows),
+                max(lengths),
+                first.shape[1],
+                dtype=torch.float32,
+                device=first.device if torch.is_tensor(first) else "cpu",
             )
-            mask = np.zeros(hidden.shape[:2], dtype=bool)
+            mask = torch.zeros(hidden.shape[:2], dtype=torch.bool, device=hidden.device)
             for index, row in enumerate(prefix_rows):
-                hidden[index, : len(row)] = row
+                hidden[index, : len(row)] = torch.as_tensor(row, device=hidden.device)
                 mask[index, : len(row)] = True
-            result["prefix_hidden_states"] = torch.from_numpy(hidden)
-            result["prefix_mask"] = torch.from_numpy(mask)
+            result["prefix_hidden_states"] = hidden
+            result["prefix_mask"] = mask
         return actions, result
 
     def close(self) -> None:
-        close = getattr(self.model, "close", None)
+        """Release the native model on its inference-owner thread once."""
+        if self._closed:
+            return
+        self._closed = True
+        model, self.model = self.model, None
+        close = getattr(model, "close", None)
         if callable(close):
             close()
 
 
 class OnlineResidualApxInfAdapter:
     """Keep PI0.5 in ApxInf while running RLT and residual Actor in PyTorch."""
+
+    def predict_base_action_batch(
+        self,
+        env_obs: Mapping[str, Any],
+        *,
+        horizon: int,
+        committed: torch.Tensor | None = None,
+        rtc_delay_steps: int | None = None,
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
+        """Sample the full base horizon before the fine phase begins."""
+        if committed is not None:
+            raise ValueError("APX base inference does not use committed actions.")
+        physical, metadata = self.base.predict_action_batch(env_obs, mode="eval")
+        if physical.shape[1] < horizon:
+            raise ValueError("APX prediction is shorter than the base chunk.")
+        return physical, metadata
 
     def __init__(
         self,
@@ -650,7 +710,40 @@ class OnlineResidualApxInfAdapter:
         self.rlt_module.eval()
         self.rlt_module.requires_grad_(False)
         self.actor.eval()
+        self.conditions_on_committed = False
+        self.actor_version = 0
         self.metadata = {**self.base.metadata, "sidecar": "online_residual"}
+
+    def _pad_rlt_prefix(
+        self, prefix: torch.Tensor, mask: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Restore Stage1's masked camera slots before RLT positional encoding."""
+        from openpi.models.model import IMAGE_KEYS
+
+        model = self.base.model
+        image_slots = len(IMAGE_KEYS)
+        views = int(model.num_views)
+        patch_size = int(model.patch_size)
+        image_size = int(model.image_size)
+        if patch_size <= 0 or image_size % patch_size or views > image_slots:
+            raise ValueError("APX image geometry disagrees with Stage1 image slots.")
+        per_view = (image_size // patch_size) ** 2
+        image_tokens = views * per_view
+        if prefix.ndim != 3 or mask.shape != prefix.shape[:2]:
+            raise ValueError("APX prefix and mask must have matching batch/length.")
+        if prefix.shape[1] < image_tokens:
+            raise ValueError("APX prefix is shorter than its image patch tokens.")
+        missing = (image_slots - views) * per_view
+        if not missing:
+            return prefix, mask
+        padding = prefix.new_zeros(prefix.shape[0], missing, prefix.shape[2])
+        invalid = mask.new_zeros(mask.shape[0], missing)
+        return (
+            torch.cat(
+                (prefix[:, :image_tokens], padding, prefix[:, image_tokens:]), dim=1
+            ),
+            torch.cat((mask[:, :image_tokens], invalid, mask[:, image_tokens:]), dim=1),
+        )
 
     @staticmethod
     def _unwrap_state_dict(value: Any) -> Mapping[str, torch.Tensor]:
@@ -666,38 +759,43 @@ class OnlineResidualApxInfAdapter:
     def _select_prefixed(
         state: Mapping[str, torch.Tensor], prefixes: tuple[str, ...]
     ) -> dict[str, torch.Tensor]:
-        selected = {}
-        for key, value in state.items():
-            for prefix in prefixes:
+        for prefix in prefixes:
+            selected = {}
+            for key, value in state.items():
                 marker = f"{prefix}."
                 position = key.find(marker)
                 if position >= 0:
                     selected[key[position + len(marker) :]] = value
-                    break
-        return selected
+            if selected:
+                return selected
+        return {}
 
     def _load_sidecar(self, rlt_checkpoint: Any, actor_checkpoint: Any) -> None:
         if not rlt_checkpoint:
             raise ValueError(
                 "rlt.checkpoint is required for APX online residual inference."
             )
+        from rlinf.models.embodiment.openpi_rlinf.checkpoint import resolve_full_weights
+
+        rlt_path = pathlib.Path(str(rlt_checkpoint)).expanduser()
+        if rlt_path.is_dir():
+            resolved = resolve_full_weights(rlt_path)
+            if resolved is None:
+                raise FileNotFoundError(
+                    f"Stage1 full_weights.pt was not found under {rlt_path}."
+                )
+            rlt_path = resolved
         rlt_state = self._unwrap_state_dict(
-            torch.load(str(rlt_checkpoint), map_location="cpu", weights_only=False)
+            torch.load(str(rlt_path), map_location="cpu", weights_only=False)
         )
         selected_rlt = self._select_prefixed(
             rlt_state, ("rlt_module.encoder", "encoder")
         )
         self.rlt_module.load_state_dict(selected_rlt or rlt_state, strict=True)
         if actor_checkpoint:
-            actor_state = self._unwrap_state_dict(
-                torch.load(
-                    str(actor_checkpoint), map_location="cpu", weights_only=False
-                )
-            )
-            selected_actor = self._select_prefixed(
-                actor_state, ("actor", "module.actor")
-            )
-            self.actor.load_state_dict(selected_actor or actor_state, strict=True)
+            from rlinf.algorithms.online_residual_rl.checkpoint import load_actor_state
+
+            self.actor.load_state_dict(load_actor_state(actor_checkpoint), strict=True)
 
     @torch.inference_mode()
     def predict_action_batch(
@@ -716,37 +814,51 @@ class OnlineResidualApxInfAdapter:
         Optional normalized committed actions construct Critic metadata only.
         They never condition the VLA or the Actor.
         """
-        _, base_result = self.base.predict_action_batch(env_obs, mode=mode)
+        # Keep APX Stage1's established deterministic sampler. Exploration is
+        # applied only by the PyTorch residual Actor below.
+        _, base_result = self.base.predict_action_batch(env_obs, mode="eval")
         base_reference = base_result["normalized_actions"][
             ..., : self.config.actor_horizon, : self.config.action_dim
         ].to(self.device)
-        prefix = base_result["prefix_hidden_states"].to(self.device)
-        proprio = torch.as_tensor(
-            np.stack(
-                [
-                    row["state"][: self.config.proprio_dim]
-                    for row in base_result["prepared"]
-                ]
-            ),
-            device=self.device,
-            dtype=torch.float32,
+        prefix, prefix_mask = self._pad_rlt_prefix(
+            base_result["prefix_hidden_states"], base_result["prefix_mask"]
         )
+        prefix = prefix.to(self.device)
+        state = env_obs["states"]
+        if self.config.proprio_normalization == "stage1":
+            state = np.stack([item["state"] for item in base_result["prepared"]])
+            state = state[..., : self.config.proprio_dim]
+        proprio = torch.as_tensor(state, device=self.device, dtype=torch.float32)
+        if (
+            proprio.ndim != 2
+            or proprio.shape
+            != (
+                base_reference.shape[0],
+                self.config.proprio_dim,
+            )
+            or not torch.isfinite(proprio).all()
+        ):
+            raise ValueError(
+                "APX residual proprio must be finite [batch, proprio_dim]."
+            )
         decision = self.controller.decide(
             prefix_hidden_states=prefix,
             proprio=proprio,
             base_reference=base_reference,
-            deterministic=(mode == "eval"),
+            deterministic=(mode != "rollout"),
             committed=committed,
-            prefix_mask=base_result["prefix_mask"].to(self.device),
+            prefix_mask=prefix_mask.to(self.device),
+            use_actor=(mode != "base"),
         )
         prepared = base_result["prepared"]
-        output = (
-            decision.proposal
-            if decision.proposal is not None
-            else decision.actor_output
+        # OpenPI output transforms expect the full model action width, even
+        # though the residual Actor changes only the executable action dims.
+        model_actions = torch.zeros_like(
+            base_result["normalized_actions"][:, : self.config.actor_horizon]
         )
+        model_actions[..., : self.config.action_dim] = decision.actor_output
         actions = self.base.processor.postprocess_batch(
-            output.detach().cpu().numpy(),
+            model_actions.detach().cpu().numpy(),
             prepared,
             chunk_len=self.config.actor_horizon,
         )
@@ -759,6 +871,7 @@ class OnlineResidualApxInfAdapter:
             "policy_proposal": decision.proposal,
         }
         return actions, {
+            "normalized_actions": decision.actor_output,
             "prev_logprobs": None,
             "prev_values": None,
             "forward_inputs": forward_inputs,
@@ -774,7 +887,16 @@ class OnlineResidualApxInfAdapter:
                 "to commit physical execution receipts."
             )
         normalized = stats(physical_actions)
-        return normalized.to(self.device)
+        return normalized.detach().cpu()
+
+    @torch.inference_mode()
+    def install_actor(self, state: dict[str, torch.Tensor], version: int) -> None:
+        """Install a complete Actor snapshot at an inference request boundary."""
+        if version <= self.actor_version:
+            raise ValueError("Published Actor version must increase.")
+        self.actor.load_state_dict(state, strict=True)
+        self.actor.eval()
+        self.actor_version = version
 
     def reset(self) -> None:
         """Clear committed actions at an episode boundary."""

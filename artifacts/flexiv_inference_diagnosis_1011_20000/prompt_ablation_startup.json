@@ -1,0 +1,46 @@
+{
+  "checkpoint": "/home/qccc/checkpoints/myq/ckpt_1011_20000/full_weights.pt",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "observation": "dataset episode 0 frame 0, identical state/images/noise across prompts; startup bootstrap without RTC",
+  "tcp_method": "Flexiv URDF FK, tool transform calibrated from dataset frame 0",
+  "metrics": {
+    "live_prompt": {
+      "joint_mae_deg_first20": 0.3321072459220886,
+      "tcp_error_norm_mean_mm_first20": 4.5293016932302805,
+      "tcp_z_mae_mm_first20": 4.122920219911716,
+      "frame0_z_error_mm_by_seed": [
+        2.2241914775897875,
+        2.7754639735426414,
+        2.6924033731309525
+      ],
+      "frame19_z_error_mm_by_seed": [
+        7.93098828170613,
+        7.21217267160093,
+        7.103691116780968
+      ],
+      "mean_tcp_z_delta_action19_mm": 0.7250118321546947,
+      "dataset_tcp_z_delta_action19_mm": -6.690605524541315
+    },
+    "connector_prompt": {
+      "joint_mae_deg_first20": 0.26094818115234375,
+      "tcp_error_norm_mean_mm_first20": 3.24925308041687,
+      "tcp_z_mae_mm_first20": 2.6145648613532746,
+      "frame0_z_error_mm_by_seed": [
+        1.3997616152084669,
+        1.5440321486959452,
+        1.7779208650548772
+      ],
+      "frame19_z_error_mm_by_seed": [
+        6.347576685105355,
+        5.508624325903238,
+        5.044484044253644
+      ],
+      "mean_tcp_z_delta_action19_mm": -1.0570438394539028,
+      "dataset_tcp_z_delta_action19_mm": -6.690605524541315
+    }
+  }
+}

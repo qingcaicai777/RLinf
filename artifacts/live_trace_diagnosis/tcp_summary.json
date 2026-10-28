@@ -1,0 +1,181 @@
+{
+  "bootstrap_action0_tcp_delta_mm": [
+    1.6220276471679007,
+    0.49573658183470204,
+    3.7461722265531017
+  ],
+  "bootstrap_action19_tcp_delta_mm": [
+    5.114797390198489,
+    1.4655430408530705,
+    3.191324026987241
+  ],
+  "dataset_action19_delta_mm": [
+    6.689402244051124,
+    1.2267232000756911,
+    -6.690605476452283
+  ],
+  "max_nominal_target_vs_measured_tcp_error_mm": 10.174006842031737,
+  "image_state_lag": [
+    {
+      "request": 16,
+      "state_joint_max_diff_deg": 0.05109916705546292
+    },
+    {
+      "request": 32,
+      "state_joint_max_diff_deg": 0.16417836073976472
+    },
+    {
+      "request": 48,
+      "state_joint_max_diff_deg": 0.06678066321319204
+    },
+    {
+      "request": 64,
+      "state_joint_max_diff_deg": 0.11212293906422317
+    },
+    {
+      "request": 80,
+      "state_joint_max_diff_deg": 0.11280833016747076
+    },
+    {
+      "request": 96,
+      "state_joint_max_diff_deg": 0.07388378912217379
+    },
+    {
+      "request": 112,
+      "state_joint_max_diff_deg": 0.0713968126677818
+    },
+    {
+      "request": 128,
+      "state_joint_max_diff_deg": 0.09059213084614848
+    },
+    {
+      "request": 144,
+      "state_joint_max_diff_deg": 0.10235842119604577
+    },
+    {
+      "request": 160,
+      "state_joint_max_diff_deg": 0.05789711565636865
+    },
+    {
+      "request": 176,
+      "state_joint_max_diff_deg": 0.056533687530075566
+    },
+    {
+      "request": 192,
+      "state_joint_max_diff_deg": 0.04430943270102763
+    },
+    {
+      "request": 208,
+      "state_joint_max_diff_deg": 0.053406353760811674
+    },
+    {
+      "request": 224,
+      "state_joint_max_diff_deg": 0.05354804935421855
+    },
+    {
+      "request": 240,
+      "state_joint_max_diff_deg": 0.08291194065563026
+    },
+    {
+      "request": 256,
+      "state_joint_max_diff_deg": 0.1317108488105538
+    },
+    {
+      "request": 272,
+      "state_joint_max_diff_deg": 0.03732417207503719
+    },
+    {
+      "request": 288,
+      "state_joint_max_diff_deg": 0.12437205774879333
+    },
+    {
+      "request": 304,
+      "state_joint_max_diff_deg": 0.2637241959456187
+    },
+    {
+      "request": 320,
+      "state_joint_max_diff_deg": 0.126436707609897
+    },
+    {
+      "request": 336,
+      "state_joint_max_diff_deg": 0.14067003661999758
+    },
+    {
+      "request": 352,
+      "state_joint_max_diff_deg": 0.059562500855902964
+    },
+    {
+      "request": 368,
+      "state_joint_max_diff_deg": 0.1462383376819848
+    },
+    {
+      "request": 384,
+      "state_joint_max_diff_deg": 0.06916440520393492
+    },
+    {
+      "request": 400,
+      "state_joint_max_diff_deg": 0.07555908331601174
+    },
+    {
+      "request": 416,
+      "state_joint_max_diff_deg": 0.09742093276104129
+    },
+    {
+      "request": 432,
+      "state_joint_max_diff_deg": 0.06891887550670084
+    },
+    {
+      "request": 448,
+      "state_joint_max_diff_deg": 0.07243611341572227
+    },
+    {
+      "request": 464,
+      "state_joint_max_diff_deg": 0.05927014645323082
+    },
+    {
+      "request": 480,
+      "state_joint_max_diff_deg": 0.09937766883033612
+    },
+    {
+      "request": 496,
+      "state_joint_max_diff_deg": 0.03666929376959126
+    },
+    {
+      "request": 512,
+      "state_joint_max_diff_deg": 0.04371304159062156
+    },
+    {
+      "request": 528,
+      "state_joint_max_diff_deg": 0.05126703783222127
+    },
+    {
+      "request": 544,
+      "state_joint_max_diff_deg": 0.0760956641937864
+    },
+    {
+      "request": 560,
+      "state_joint_max_diff_deg": 0.14380105855344744
+    },
+    {
+      "request": 576,
+      "state_joint_max_diff_deg": 0.045544784652592804
+    },
+    {
+      "request": 592,
+      "state_joint_max_diff_deg": 0.06639387606496601
+    },
+    {
+      "request": 608,
+      "state_joint_max_diff_deg": 0.10448558917974551
+    },
+    {
+      "request": 624,
+      "state_joint_max_diff_deg": 0.10198963544950569
+    }
+  ],
+  "dataset_input_same_noise_action19_delta_mm": [
+    5.606724467386193,
+    1.0613029653360613,
+    1.7282027931480037
+  ]
+}

@@ -1,0 +1,44 @@
+# Use this file on both the inference server and the robot client.
+action_representation: joint_absolute
+stage2_config: examples/embodiment/config/flexiv_joint_stage2.yaml
+checkpoint: /home/qccc/checkpoints/myq/chkpt_1014_20000/full_weights.pt
+norm_stats: /home/qccc/checkpoints/myq/connecter_1010/peg_insertion_joint_absolute_1008_v4/norm_stats.json
+training_config: examples/sft/config/flexiv_joint_stage1_inference.yaml
+backend: torch
+disable_debug: true
+num_flow_steps: 10
+serve: true
+online_train: true
+# Keep replay and Actor checkpoints separate from runs with older Stage1 weights.
+episode_dir: results/flexiv_joint_stage2_ckpt1014_20000/episodes
+checkpoint_dir: results/flexiv_joint_stage2_ckpt1014_20000/checkpoints
+# Actor learning starts after labelled base episodes and the Critic warmup.
+base_only_episodes: 50
+stage1_only: false
+# Robot-side measured left TCP in the robot base frame; distances in mm.
+auto_fine:
+  xy_center_mm: [480.0, 53.0]
+  xy_radius_mm: 15.0
+  z_below_mm: 138.0
+  consecutive_ticks: 3
+home_dataset_path: /home/qccc/Flexiv/flexiv_rdk/example_py/myq/peg_insertion_joint_absolute_1008/data
+base_chunk_steps: 22
+base_request_steps: 18
+# Keep raw normalized joint overlap for RTC; no TCP pose rebasing.
+rtc_guidance_mode: jacobian
+joint_control:
+  # SendJointPosition uses rad/s and rad/s^2, with zero terminal velocities.
+  # Coarse model limits; Fine multiplies both by fine_motion_limit_scale.
+  # Position limits come from SDK RobotInfo.
+  max_joint_velocity_rad_s: [0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06]
+  max_joint_acceleration_rad_s2: [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15]
+  fine_motion_limit_scale: 0.2
+
+# Robot-side optional binary control; threshold compares the raw pre-unnormalization action.
+# Speed uses gripper_control.velocity_m_s; binary close uses 50 N with optional arm hold.
+# Opening and manual O/C use gripper_control.force_limit_n in --myq-config.
+gripper_policy:
+  binary: false
+  threshold: 0.5
+  # false lets the arm continue model motion during the 50 N binary closure.
+  hold_arm_on_close: false

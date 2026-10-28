@@ -12,6 +12,8 @@ from rlinf.envs.real.registry import register_tasks
 
 from .base import FlexivEnv, FlexivEnvConfig
 from .intervention import FlexivInterventionDevice
+from .intervention_command import InterventionCommand, InterventionSource
+from .leader_drag import LeaderDragConfig, LeaderDragInterventionSource
 from .rtc_adapter import FlexivRTCAdapter, FlexivRTCConfig
 
 TASKS = {"FlexivOnlineResidualEnv-v1": FlexivEnv}
@@ -22,6 +24,10 @@ __all__ = [
     "FlexivEnv",
     "FlexivEnvConfig",
     "FlexivInterventionDevice",
+    "InterventionCommand",
+    "InterventionSource",
+    "LeaderDragConfig",
+    "LeaderDragInterventionSource",
     "FlexivRTCAdapter",
     "FlexivRTCConfig",
     *_ENTRY_POINTS,

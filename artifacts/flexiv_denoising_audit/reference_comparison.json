@@ -1,0 +1,182 @@
+[
+  {
+    "mode": "baseline",
+    "origin": 100,
+    "seed": 0,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.3236256837844849,
+    "handoff_step_deg": 1.4404287338256836,
+    "joint_mae_deg": 0.337041471282326
+  },
+  {
+    "mode": "baseline",
+    "origin": 100,
+    "seed": 1,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.2628780603408813,
+    "handoff_step_deg": 1.37968111038208,
+    "joint_mae_deg": 0.30918837318187453
+  },
+  {
+    "mode": "baseline",
+    "origin": 100,
+    "seed": 2,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.3313164710998535,
+    "handoff_step_deg": 1.4481195211410522,
+    "joint_mae_deg": 0.3327916232306317
+  },
+  {
+    "mode": "reference_decay",
+    "origin": 100,
+    "seed": 0,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.3109506368637085,
+    "handoff_step_deg": 1.4277536869049072,
+    "joint_mae_deg": 0.35100599631985663
+  },
+  {
+    "mode": "reference_decay",
+    "origin": 100,
+    "seed": 1,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.2475186586380005,
+    "handoff_step_deg": 1.3643217086791992,
+    "joint_mae_deg": 0.3265686365226369
+  },
+  {
+    "mode": "reference_decay",
+    "origin": 100,
+    "seed": 2,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.2843350172042847,
+    "handoff_step_deg": 1.4011380672454834,
+    "joint_mae_deg": 0.34762460546593327
+  },
+  {
+    "mode": "baseline",
+    "origin": 300,
+    "seed": 0,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 0.5918222069740295,
+    "handoff_step_deg": 0.39055702090263367,
+    "joint_mae_deg": 0.22819621869323284
+  },
+  {
+    "mode": "baseline",
+    "origin": 300,
+    "seed": 1,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 0.46492069959640503,
+    "handoff_step_deg": 0.26365554332733154,
+    "joint_mae_deg": 0.23376484719121243
+  },
+  {
+    "mode": "baseline",
+    "origin": 300,
+    "seed": 2,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 0.6111311316490173,
+    "handoff_step_deg": 0.40986597537994385,
+    "joint_mae_deg": 0.31605375679886055
+  },
+  {
+    "mode": "reference_decay",
+    "origin": 300,
+    "seed": 0,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 0.6099358797073364,
+    "handoff_step_deg": 0.40867069363594055,
+    "joint_mae_deg": 0.2264944089629119
+  },
+  {
+    "mode": "reference_decay",
+    "origin": 300,
+    "seed": 1,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 0.45811784267425537,
+    "handoff_step_deg": 0.2568526566028595,
+    "joint_mae_deg": 0.2304856940374323
+  },
+  {
+    "mode": "reference_decay",
+    "origin": 300,
+    "seed": 2,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 0.5974776148796082,
+    "handoff_step_deg": 0.3962124288082123,
+    "joint_mae_deg": 0.3111705154233533
+  },
+  {
+    "mode": "baseline",
+    "origin": 450,
+    "seed": 0,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.2903848886489868,
+    "handoff_step_deg": 1.433204174041748,
+    "joint_mae_deg": 0.24180035130632083
+  },
+  {
+    "mode": "baseline",
+    "origin": 450,
+    "seed": 1,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.2770830392837524,
+    "handoff_step_deg": 1.3032939434051514,
+    "joint_mae_deg": 0.21679647881490655
+  },
+  {
+    "mode": "baseline",
+    "origin": 450,
+    "seed": 2,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.4042987823486328,
+    "handoff_step_deg": 1.401949167251587,
+    "joint_mae_deg": 0.23559429099966198
+  },
+  {
+    "mode": "reference_decay",
+    "origin": 450,
+    "seed": 0,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.2627140283584595,
+    "handoff_step_deg": 1.4152748584747314,
+    "joint_mae_deg": 0.2604562066824337
+  },
+  {
+    "mode": "reference_decay",
+    "origin": 450,
+    "seed": 1,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.247124195098877,
+    "handoff_step_deg": 1.316368579864502,
+    "joint_mae_deg": 0.23394752425959434
+  },
+  {
+    "mode": "reference_decay",
+    "origin": 450,
+    "seed": 2,
+    "K": 22,
+    "R": 18,
+    "same_time_change_deg": 1.3579320907592773,
+    "handoff_step_deg": 1.3555824756622314,
+    "joint_mae_deg": 0.24360072954290063
+  }
+]

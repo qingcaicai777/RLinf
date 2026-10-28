@@ -1,0 +1,23 @@
+{
+  "dataset": "/home/qccc/Flexiv/flexiv_rdk/example_py/myq/peg_insertion_joint_absolute_1008",
+  "checkpoint": "/home/qccc/checkpoints/myq/connecter_1010/full_weights.pt",
+  "norm_stats": "/home/qccc/checkpoints/myq/connecter_1010/peg_insertion_joint_absolute_1008_v4/norm_stats.json",
+  "inference_recipe": "examples/sft/config/flexiv_joint_stage1_inference.yaml",
+  "episode": "episode_000000",
+  "inference_horizon": 32,
+  "num_flow_steps": 10,
+  "rtc_guidance_clip": 10,
+  "rtc_delay_steps": 4,
+  "state_mean_max_abs_mismatch": 1.9761969838327786e-14,
+  "action_chunk_mean_max_abs_mismatch": 1.14436238263238e-13,
+  "action_chunk_std_max_abs_mismatch": 1.7337381530424523e-12,
+  "cuda_graph_vs_eager_max_action_difference": 0,
+  "notes": [
+    "Recorded observations were used instead of robot hardware.",
+    "RTC used eager autograd; latency does not represent the compiled production server.",
+    "Errors compare one recorded demonstration with sampled predictions; this is not a task success evaluation."
+  ],
+  "training_config": "/media/qccc/KESU/checkpoints/connecter_1010/config.yaml",
+  "training_preprocessing_status": "User confirmed correct normalization, padding, camera, and state encoding on the training machine.",
+  "training_recipe_model_difference": "config_name: pi05_flexiv_joint (training), pi05_flexiv_joint_absolute (local inference); user confirmed transforms are correct."
+}

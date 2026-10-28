@@ -119,7 +119,9 @@ class Pi0Eval(EnvIO, Pi0):
         }
 
     @torch.no_grad()
-    def extract_rlt_obs(self, env_obs: dict[str, Any]) -> dict[str, torch.Tensor]:
+    def extract_rlt_obs(
+        self, env_obs: dict[str, Any], *, rtc_context=None
+    ) -> dict[str, torch.Tensor]:
         """Extract the frozen Stage1 features consumed by the Stage2 RLT head."""
         self._require_rlt()
         observation = self.env_obs_to_observation(env_obs)
@@ -135,11 +137,26 @@ class Pi0Eval(EnvIO, Pi0):
             dtype=torch.float32
         )
 
-        model_actions = self._sample_actions_from_prefix_cache(
-            prepared_observation,
-            prefix_mask,
-            kv_cache,
-        )
+        if rtc_context is None:
+            model_actions = self._sample_actions_from_prefix_cache(
+                prepared_observation,
+                prefix_mask,
+                kv_cache,
+            )
+        else:
+            from rlinf.models.embodiment.openpi_rlinf.sampling.rtc_guidance import (
+                sample_actions_with_rtc_guidance,
+            )
+
+            model_actions = sample_actions_with_rtc_guidance(
+                self,
+                prepared_observation,
+                rtc_context,
+                num_steps=self.num_steps,
+                guidance_clip=self.rtc_guidance_clip,
+                guidance_mode=getattr(self, "rtc_guidance_mode", "approx"),
+                prefix_cache=(prefix_mask, kv_cache),
+            )
         if self.rlt_cfg.rlt_normalized_actions:
             ref_chunk = model_actions[
                 ..., : int(self.action_env_dim or model_actions.shape[-1])
@@ -150,7 +167,7 @@ class Pi0Eval(EnvIO, Pi0):
             )["actions"]
 
         raw_proprio = self._select_configured_state(env_obs["states"])
-        if "maniskill" in self.config_name.lower():
+        if any(name in self.config_name.lower() for name in ("maniskill", "flexiv")):
             state_dim = (
                 raw_proprio.shape[-1]
                 if hasattr(raw_proprio, "shape")
@@ -166,6 +183,8 @@ class Pi0Eval(EnvIO, Pi0):
             "z_rl": z_rl,
             "proprio": proprio.to(device=z_rl.device, dtype=torch.float32),
             "ref_chunk": ref_chunk.to(device=z_rl.device, dtype=torch.float32),
+            "raw_model_actions": model_actions.detach(),
+            "model_state": observation.state,
         }
 
     def _sample_actions_from_prefix_cache(
@@ -193,10 +212,9 @@ class Pi0Eval(EnvIO, Pi0):
         t = 1.0
         while t >= -dt / 2:
             t_tensor = torch.full((batch_size,), t, device=device, dtype=torch.float32)
-            suffix_out = self.run_suffix(
+            v_t = self.sample_velocity(
                 observation, x_t, t_tensor, kv_cache, prefix_mask
             )
-            v_t = self.velocity_from_suffix(suffix_out)
             x_t = x_t + dt * v_t
             t += dt
         return x_t

@@ -105,11 +105,16 @@ def create_flexiv_sft_data_loader(
     data_kwargs: dict[str, Any] | None = None,
     cache_dir: str | None = None,
 ) -> FlexivSftDataLoader:
-    """Create the Flexiv loader and apply OpenPI transforms after delta conversion."""
+    """Create transformed TCP-delta or absolute-joint SFT batches."""
     dataset = FlexivSftDataset(
         data_path=data_path,
         action_horizon=action_horizon,
         cache_dir=cache_dir,
+        action_representation=(
+            "joint_absolute"
+            if config_name == "pi05_flexiv_joint_absolute"
+            else "eef_delta"
+        ),
     )
     input_transforms, _ = build_openpi_transforms(
         model_path,

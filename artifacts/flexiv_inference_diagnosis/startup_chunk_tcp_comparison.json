@@ -1,0 +1,50 @@
+{
+  "note": "FK estimates from the dataset frame-0 eef pose and Flexiv URDF; compares the same three seeds used in full_episode_framewise.png with dataset action targets for the first 20 executed actions.",
+  "seed_count": 3,
+  "frames": 20,
+  "frame19": {
+    "model_seed_tcp_delta_mm": [
+      [
+        6.5412516682943895,
+        -0.11812401329068523,
+        -0.2887170271760886
+      ],
+      [
+        7.531623532314791,
+        0.03030682425159137,
+        -1.1187754314453124
+      ],
+      [
+        4.860467701296834,
+        1.030640642412803,
+        -1.519550886067672
+      ]
+    ],
+    "model_mean_tcp_delta_mm": [
+      6.311114300635339,
+      0.314274484457903,
+      -0.9756811148963577
+    ],
+    "dataset_action_tcp_delta_mm": [
+      6.6894040312476255,
+      1.2267220132704537,
+      -6.690605524541315
+    ],
+    "mean_model_minus_dataset_tcp_delta_mm": [
+      -0.37828973061228677,
+      -0.9124475288125506,
+      5.714924409644957
+    ],
+    "z_difference_mm": 5.714924409644957,
+    "model_seed_z_span_mm": [
+      -1.519550886067672,
+      -0.2887170271760886
+    ]
+  },
+  "first20_joint_mae_deg_by_seed": [
+    0.305208683013916,
+    0.27644553780555725,
+    0.25676774978637695
+  ],
+  "first20_model_mean_joint_mae_deg": 0.2599356472492218
+}

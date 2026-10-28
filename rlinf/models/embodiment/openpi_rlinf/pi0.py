@@ -164,6 +164,8 @@ class Pi0(model.BaseModel):
             state_indices=state_indices,
             rlt_cfg=rlt_cfg,
         )
+        self._cuda_suffix_graph = None
+        self._jacobian_run_suffix = None
         # PI0Pytorch.__init__ sets this globally so fp32 action/value heads
         # use TF32. OpenPI RL keeps this even though it un-compiles sample_actions.
         torch.set_float32_matmul_precision("high")
@@ -325,14 +327,9 @@ class Pi0(model.BaseModel):
         tokens = torch.cat(tokens, dim=1)
         input_mask = torch.cat(input_mask, dim=1)
 
-        # Build ar_mask with correct length matching input_mask.shape[1]
-        ar_mask = torch.zeros(
-            input_mask.shape[1], dtype=torch.bool, device=tokens.device
+        ar_mask = torch.arange(input_mask.shape[1], device=tokens.device) < (
+            1 if self.pi05 else 2
         )
-        if not self.pi05:
-            ar_mask[:2] = True
-        else:
-            ar_mask[0] = True
 
         return tokens, input_mask, ar_mask, adarms_cond
 
@@ -472,6 +469,48 @@ class Pi0(model.BaseModel):
         """Project action-expert hidden states to a velocity prediction v_t."""
         return self.action_out_proj(suffix_out_act.to(dtype=torch.float32))
 
+    def enable_inference_cuda_graph(self) -> None:
+        """Capture repeated PI0.5 action-expert steps on the first sample."""
+        from rlinf.models.embodiment.openpi_rlinf.sampling.cuda_graph import (
+            CudaGraphedSuffix,
+        )
+
+        self._cuda_suffix_graph = CudaGraphedSuffix(self)
+
+    def disable_inference_cuda_graph(self) -> None:
+        """Release the captured action-expert graph and its static tensors."""
+        self._cuda_suffix_graph = None
+
+    def enable_inference_jacobian_compile(self) -> None:
+        """Compile the suffix forward with AOTAutograd for RTC VJP calls."""
+        self._jacobian_run_suffix = torch.compile(
+            self.run_suffix,
+            mode="reduce-overhead",
+            fullgraph=False,
+            dynamic=False,
+        )
+
+    def disable_inference_jacobian_compile(self) -> None:
+        """Release the optional compiled Jacobian suffix."""
+        self._jacobian_run_suffix = None
+
+    def sample_velocity(
+        self,
+        observation: model.Observation,
+        actions: torch.Tensor,
+        timestep: torch.Tensor,
+        kv_cache: tuple,
+        prefix_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        """Run one inference flow step with optional CUDA graph replay."""
+        if self._cuda_suffix_graph is not None:
+            return self._cuda_suffix_graph(
+                observation, actions, timestep, kv_cache, prefix_mask
+            )
+        return self.velocity_from_suffix(
+            self.run_suffix(observation, actions, timestep, kv_cache, prefix_mask)
+        )
+
     def to_bfloat16_for_selected_params(self, precision: str = "bfloat16") -> None:
         """OpenPI ``PaliGemmaWithExpertModel.to_bfloat16_for_selected_params``.
 
@@ -556,10 +595,9 @@ class Pi0(model.BaseModel):
         # Euler integration
         while t >= -dt / 2:
             t_tensor = torch.full((B,), t, device=device, dtype=torch.float32)
-            suffix_out_act = self.run_suffix(
+            v_t = self.sample_velocity(
                 observation, x_t, t_tensor, kv_cache, prefix_mask
             )
-            v_t = self.velocity_from_suffix(suffix_out_act)
             x_t = x_t + dt * v_t
             t = t + dt
 

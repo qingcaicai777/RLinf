@@ -1,0 +1,41 @@
+{
+  "max_compiled_vs_eager_physical_difference": 0.0006023943424224854,
+  "measurements": [
+    {
+      "iteration": 0,
+      "compiled_jacobian_ms": 110.0130439735949,
+      "budget_ms": 133.33333333333334,
+      "minimum_latency_ticks": 4
+    },
+    {
+      "iteration": 1,
+      "compiled_jacobian_ms": 105.64814205281436,
+      "budget_ms": 133.33333333333334,
+      "minimum_latency_ticks": 4
+    },
+    {
+      "iteration": 2,
+      "compiled_jacobian_ms": 107.3914801236242,
+      "budget_ms": 133.33333333333334,
+      "minimum_latency_ticks": 4
+    },
+    {
+      "iteration": 3,
+      "compiled_jacobian_ms": 104.75262487307191,
+      "budget_ms": 133.33333333333334,
+      "minimum_latency_ticks": 4
+    },
+    {
+      "iteration": 4,
+      "compiled_jacobian_ms": 108.80741197615862,
+      "budget_ms": 133.33333333333334,
+      "minimum_latency_ticks": 4
+    },
+    {
+      "iteration": 5,
+      "compiled_jacobian_ms": 106.77989106625319,
+      "budget_ms": 133.33333333333334,
+      "minimum_latency_ticks": 4
+    }
+  ]
+}

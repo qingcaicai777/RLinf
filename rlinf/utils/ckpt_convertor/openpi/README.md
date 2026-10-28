@@ -1,7 +1,7 @@
 # OpenPI checkpoint convertors
 
 Consolidated convertors for the self-contained OpenPI Pi0 and Pi0.5 checkpoints
-used by the `openpi_rlinf` model package. Five conversion modes share one core
+used by the `openpi_rlinf` model package. Six conversion modes share one core
 (`_core.py`) that owns the common plumbing: locating `model.safetensors` inside a
 checkpoint directory, safetensors load/save, `config.json` read/write, the
 wrapper/FSDP prefix strip, and the single `copy_norm_stats` helper.
@@ -9,8 +9,24 @@ wrapper/FSDP prefix strip, and the single `copy_norm_stats` helper.
 Unified entry point:
 
 ```bash
-python -m rlinf.utils.ckpt_convertor.openpi.convert --mode {jax_to_openpi_rlinf,openpi_pytorch_to_openpi_rlinf,sft_to_openpi_rlinf,openpi_rlinf_to_openpi_pytorch,sft2deploy} ...
+python -m rlinf.utils.ckpt_convertor.openpi.convert --mode {jax_to_openpi_rlinf,openpi_pytorch_to_openpi_rlinf,sft_to_openpi_rlinf,openpi_rlinf_to_openpi_pytorch,sft2deploy,sft_to_apxinf} ...
 ```
+
+For Flexiv Stage2, `sft_to_apxinf` exports only the PI0.5 base to the APX
+SafeTensors layout. The Stage1 `full_weights.pt` remains the RLT sidecar and is
+not replaced by this export:
+
+```bash
+python -m rlinf.utils.ckpt_convertor.openpi.convert --mode sft_to_apxinf \
+    --ckpt /home/qccc/checkpoints/myq/model_state_dict/full_weights.pt \
+    --input-norm-stats /home/qccc/checkpoints/myq/flexiv_delta_assets/norm_stats.json \
+    --output-model /home/qccc/checkpoints/myq/apxinf_stage1 \
+    --config-name pi05_flexiv_online_residual --num-views 2
+```
+
+This export reuses the OpenPI_RLinf-to-PyTorch weight map but omits the
+action-expert LM head: APX does not read it. It preserves the Stage1 normalization
+statistics and writes `model.safetensors` plus a shape-specific `config.json`.
 
 Two named checkpoint layouts are referenced throughout:
 

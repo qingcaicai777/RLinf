@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from math import isfinite
 
 
 class ActionRepresentation(str, Enum):
@@ -36,6 +37,8 @@ class OnlineResidualRLConfig:
     """Shape and optimization constants shared by rollout and learner."""
 
     action_representation: ActionRepresentation = ActionRepresentation.EEF_DELTA
+    proprio_normalization: str = "raw"
+    normalization_id: str | None = None
     proprio_dim: int = 8
     z_dim: int = 2048
     inference_horizon: int = 6
@@ -53,6 +56,7 @@ class OnlineResidualRLConfig:
     ordinary_bc_weight: float = 5.0
     human_bc_multiplier: float = 5.0
     smooth_weight: float = 0.0
+    smooth_weights: tuple[float, float, float] = (1.0, 1.0, 1.0)
     rollout_noise_std: float = 0.04
     target_noise_std: float = 0.04
     target_noise_clip: float = 0.10
@@ -63,6 +67,8 @@ class OnlineResidualRLConfig:
     def __post_init__(self) -> None:
         representation = ActionRepresentation(self.action_representation)
         object.__setattr__(self, "action_representation", representation)
+        if self.proprio_normalization not in {"raw", "stage1"}:
+            raise ValueError("proprio_normalization must be raw or stage1.")
         if self.actor_horizon != 2 * self.inference_horizon:
             raise ValueError("actor_horizon must equal 2 * inference_horizon.")
         if self.td_horizon != self.actor_horizon:
@@ -79,6 +85,14 @@ class OnlineResidualRLConfig:
             raise ValueError("actor_kappa must be positive.")
         if self.rank_weight < 0.0 or self.smooth_weight < 0.0:
             raise ValueError("Loss weights must be nonnegative.")
+        weights = tuple(float(value) for value in self.smooth_weights)
+        if len(weights) != 3 or any(
+            not isfinite(value) or value < 0 for value in weights
+        ):
+            raise ValueError(
+                "smooth_weights must contain three finite nonnegative coefficients."
+            )
+        object.__setattr__(self, "smooth_weights", weights)
         if self.critic_updates_per_transition <= 0:
             raise ValueError("critic_updates_per_transition must be positive.")
         if self.critic_updates_per_actor_update <= 0:

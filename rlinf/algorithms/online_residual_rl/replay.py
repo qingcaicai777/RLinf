@@ -8,7 +8,7 @@ from __future__ import annotations
 import copy
 import random
 import threading
-from dataclasses import replace
+from dataclasses import asdict, dataclass, fields, replace
 from pathlib import Path
 from typing import Sequence
 
@@ -17,7 +17,26 @@ import torch
 from .config import OnlineResidualRLConfig
 from .losses import discounted_return
 from .storage import TransitionStore
-from .transition import OnlineResidualTransition, validate_transition
+from .transition import (
+    FeatureRecord,
+    OnlineResidualTransition,
+    SparseCorrection,
+    validate_transition,
+)
+
+
+@dataclass(frozen=True)
+class _ReplayRow:
+    obs_id: str
+    next_obs_id: str | None
+    correction_id: str | None
+    executed: torch.Tensor
+    rewards: torch.Tensor
+    discounted_return: torch.Tensor
+    terminal: bool
+    valid_len: int
+    schedule_valid: bool
+    receipts_valid: bool
 
 
 class EpisodeReplay:
@@ -37,7 +56,9 @@ class EpisodeReplay:
         self.config = config
         self.capacity = capacity
         self.recent_window = recent_window
-        self._rows: list[OnlineResidualTransition] = []
+        self._rows: list[_ReplayRow] = []
+        self._features: dict[str, FeatureRecord] = {}
+        self._corrections: dict[str, SparseCorrection] = {}
         self._episodes: set[str] = set()
         self._lock = threading.RLock()
         self._random = random.Random(seed)
@@ -48,25 +69,149 @@ class EpisodeReplay:
             return len(self._rows)
 
     def state_dict(self) -> dict:
-        """Capture replay, deduplication and sampler state together."""
+        """Capture ID tables, deduplication and sampler state together."""
         with self._lock:
             return copy.deepcopy(
                 {
+                    "schema_version": 2,
+                    "config": asdict(self.config),
                     "rows": self._rows,
+                    "features": self._features,
+                    "corrections": self._corrections,
                     "episodes": self._episodes,
                     "rng": self._random.getstate(),
                 }
             )
 
     def load_state_dict(self, state: dict) -> None:
-        """Validate restored rows before replacing the replay."""
+        """Restore indexed replay; accept legacy checkpoints with full rows."""
         restored = copy.deepcopy(state)
-        for row in restored["rows"]:
-            validate_transition(row, self.config)
+        if (
+            "config" in restored
+            and OnlineResidualRLConfig(**restored["config"]) != self.config
+        ):
+            raise ValueError("Replay action contract differs from this learner.")
+        candidate = EpisodeReplay(
+            self.config, capacity=self.capacity, recent_window=self.recent_window
+        )
+        if restored.get("schema_version") == 2:
+            candidate._features = restored["features"]
+            candidate._corrections = restored["corrections"]
+            candidate._rows = restored["rows"][-self.capacity :]
+            for indexed in candidate._rows:
+                validate_transition(candidate._materialize(indexed), self.config)
+            candidate._trim()
+        else:
+            for row in restored["rows"][-self.capacity :]:
+                validate_transition(row, self.config)
+                candidate._rows.append(candidate._index(row))
         with self._lock:
             self._random.setstate(restored["rng"])
-            self._rows = restored["rows"][-self.capacity :]
+            self._rows, self._features, self._corrections = (
+                candidate._rows,
+                candidate._features,
+                candidate._corrections,
+            )
             self._episodes = restored["episodes"]
+
+    def _index(self, row: OnlineResidualTransition) -> _ReplayRow:
+        for feature in (row.feature, row.next_feature):
+            if feature is not None:
+                existing = self._features.get(feature.obs_id)
+                if existing is not None:
+                    for field in fields(feature):
+                        old, new = (
+                            getattr(existing, field.name),
+                            getattr(feature, field.name),
+                        )
+                        same = (
+                            torch.equal(old, new)
+                            if isinstance(old, torch.Tensor)
+                            else old == new
+                        )
+                        if not same:
+                            raise ValueError(
+                                "Conflicting payloads for one observation ID."
+                            )
+                else:
+                    self._features[feature.obs_id] = feature
+        correction_id = row.feature.obs_id if row.correction is not None else None
+        if correction_id is not None:
+            self._corrections[correction_id] = row.correction
+        return _ReplayRow(
+            obs_id=row.feature.obs_id,
+            next_obs_id=row.next_feature.obs_id if row.next_feature else None,
+            correction_id=correction_id,
+            executed=row.executed,
+            rewards=row.rewards,
+            discounted_return=row.discounted_return,
+            terminal=row.terminal,
+            valid_len=row.valid_len,
+            schedule_valid=row.schedule_valid,
+            receipts_valid=row.receipts_valid,
+        )
+
+    def _materialize(self, row: _ReplayRow) -> OnlineResidualTransition:
+        return OnlineResidualTransition(
+            feature=self._features[row.obs_id],
+            next_feature=self._features[row.next_obs_id] if row.next_obs_id else None,
+            correction=self._corrections[row.correction_id]
+            if row.correction_id
+            else None,
+            executed=row.executed,
+            rewards=row.rewards,
+            discounted_return=row.discounted_return,
+            terminal=row.terminal,
+            valid_len=row.valid_len,
+            schedule_valid=row.schedule_valid,
+            receipts_valid=row.receipts_valid,
+        )
+
+    def _trim(self) -> None:
+        self._rows = self._rows[-self.capacity :]
+        feature_ids = {
+            key for row in self._rows for key in (row.obs_id, row.next_obs_id) if key
+        }
+        correction_ids = {row.correction_id for row in self._rows if row.correction_id}
+        self._features = {
+            key: value for key, value in self._features.items() if key in feature_ids
+        }
+        self._corrections = {
+            key: value
+            for key, value in self._corrections.items()
+            if key in correction_ids
+        }
+
+    def transitions(self) -> list[OnlineResidualTransition]:
+        """Return a detached resident snapshot, sharing feature copies by ID."""
+        with self._lock:
+            return copy.deepcopy([self._materialize(row) for row in self._rows])
+
+    def statistics(self) -> dict[str, float]:
+        """Return resident window, feature and correction counts."""
+        with self._lock:
+            rows = [self._materialize(row) for row in self._rows]
+            return {
+                "replay/windows": len(rows),
+                "replay/features": len(self._features),
+                "replay/episodes": len(self._episodes),
+                "replay/relative_windows": sum(row.relative_q_eligible for row in rows),
+                "replay/terminal_windows": sum(row.terminal for row in rows),
+                "replay/human_windows": sum(
+                    row.correction is not None and bool(row.correction.human_mask.any())
+                    for row in rows
+                ),
+                "replay/pair_windows": sum(
+                    row.correction is not None and bool(row.correction.pair_mask.any())
+                    for row in rows
+                ),
+                "replay/human_coordinates": sum(
+                    int(value.human_mask.sum()) for value in self._corrections.values()
+                ),
+                "replay/pair_coordinates": sum(
+                    int(value.pair_mask.sum()) for value in self._corrections.values()
+                ),
+            }
 
     def commit_episode(
         self,
@@ -74,6 +219,7 @@ class EpisodeReplay:
         *,
         success: bool,
         terminal_frame: int,
+        persist: bool = True,
     ) -> int:
         """Validate all rows, assign the single physical terminal reward, then publish.
 
@@ -120,11 +266,23 @@ class EpisodeReplay:
         with self._lock:
             if episode in self._episodes:
                 return 0
-            if self.store is not None:
+            # Build tables privately so conflicting IDs cannot partially publish.
+            candidate = EpisodeReplay(
+                self.config, capacity=self.capacity, recent_window=self.recent_window
+            )
+            candidate._features = self._features.copy()
+            candidate._corrections = self._corrections.copy()
+            indexed = [candidate._index(row) for row in prepared]
+            if self.store is not None and persist:
                 self.store.save_episode(
                     prepared, success=success, terminal_frame=terminal_frame
                 )
-            self._rows = (self._rows + prepared)[-self.capacity :]
+            self._features, self._corrections = (
+                candidate._features,
+                candidate._corrections,
+            )
+            self._rows.extend(indexed)
+            self._trim()
             self._episodes.add(episode)
         return len(prepared)
 
@@ -136,7 +294,8 @@ class EpisodeReplay:
             raise ValueError(f"Unknown replay pool: {kind}")
         with self._lock:
             groups = {}
-            for row in self._rows[-self.recent_window :]:
+            for indexed in self._rows[-self.recent_window :]:
+                row = self._materialize(indexed)
                 human = row.correction is not None and bool(
                     row.correction.human_mask.any()
                 )

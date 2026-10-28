@@ -88,6 +88,16 @@ class HandoffSchedule:
         self._queue = result.clone()
         return result.clone()
 
+    def record_execution(self, frame: int, action: torch.Tensor) -> None:
+        """Store the final accepted normalized command for this queue slot."""
+        if self._queue is None:
+            raise RuntimeError("No active execution queue.")
+        offset = frame % self.config.inference_horizon
+        value = torch.as_tensor(action, dtype=self._queue.dtype)
+        if value.shape != (self.config.action_dim,) or not torch.isfinite(value).all():
+            raise ValueError("Executed action must be finite [action_dim].")
+        self._queue[offset] = value.detach().clone()
+
     def _validate(self, actions: torch.Tensor) -> None:
         if actions.shape != (self.config.inference_horizon, self.config.action_dim):
             raise ValueError("Accepted queue must have shape [n, action_dim].")

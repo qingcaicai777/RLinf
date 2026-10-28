@@ -1,0 +1,3108 @@
+[
+  {
+    "episode": 0,
+    "frames": 988,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 47.731737999999524,
+        "median": 56.16465199999965,
+        "p95": 80.85602945000012,
+        "max": 85.30069800000106
+      },
+      "wrist_to_command_ms": {
+        "min": 37.72841600000021,
+        "median": 50.503629000000046,
+        "p95": 70.73659700000067,
+        "max": 74.55960300000086
+      },
+      "ready_to_command_ms": {
+        "min": 1.0559840000006204,
+        "median": 15.03327100000007,
+        "p95": 30.496362850000235,
+        "max": 36.86412700000119
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 4.346921999999864,
+        "median": 8.764289999998454,
+        "p95": 13.183020050001382,
+        "max": 14.762215999994055
+      },
+      "state_bracket_ms": {
+        "min": 32.80326100000153,
+        "median": 33.3341805000007,
+        "p95": 33.44865234999954,
+        "max": 33.83759000000097
+      },
+      "control_cycle_ms": {
+        "min": 29.33215899999908,
+        "median": 33.33830150000061,
+        "p95": 34.31394704999957,
+        "max": 37.89227500000081
+      },
+      "command_interval_ms": {
+        "min": 29.33215899999908,
+        "median": 33.338519000000844,
+        "p95": 34.31459989999963,
+        "max": 37.89227500000081
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34764599999929,
+        "p95": 33.35165679999825,
+        "max": 33.35304199999811
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.9295976666656713,
+        "median": -0.0037426666663620267,
+        "p95": 0.7584156500007655,
+        "max": 4.672696333333448
+      }
+    },
+    "startup_action0_lag_ms": 58.830180999999996,
+    "startup_action19_time_from_obs0_ms": 692.8933040000001
+  },
+  {
+    "episode": 1,
+    "frames": 1064,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 40.303486000002664,
+        "median": 49.1394255,
+        "p95": 73.44755229999969,
+        "max": 75.11518999999822
+      },
+      "wrist_to_command_ms": {
+        "min": 38.068004000002986,
+        "median": 47.87816099999992,
+        "p95": 67.24504934999923,
+        "max": 72.86390999999881
+      },
+      "ready_to_command_ms": {
+        "min": 0.8181969999974115,
+        "median": 14.823811500000005,
+        "p95": 22.544362499998982,
+        "max": 36.85244600000104
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -0.4369419999999957,
+        "median": 2.5693499999999148,
+        "p95": 8.82927179999946,
+        "max": 9.21039700000037
+      },
+      "state_bracket_ms": {
+        "min": 32.85055899999989,
+        "median": 33.333360999999506,
+        "p95": 33.44194880000071,
+        "max": 33.85297100000173
+      },
+      "control_cycle_ms": {
+        "min": 30.520469999999023,
+        "median": 33.330448500001,
+        "p95": 34.18556075000083,
+        "max": 36.15480000000204
+      },
+      "command_interval_ms": {
+        "min": 30.520469999999023,
+        "median": 33.33041100000145,
+        "p95": 34.18576050000084,
+        "max": 36.15480000000204
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34812500000339,
+        "p95": 33.35025890000001,
+        "max": 33.41672700000231
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.3703730000003134,
+        "median": -0.9355471666663284,
+        "p95": 0.30295801666442285,
+        "max": 1.6477190000010467
+      }
+    },
+    "startup_action0_lag_ms": 49.656938,
+    "startup_action19_time_from_obs0_ms": 682.08095
+  },
+  {
+    "episode": 2,
+    "frames": 1207,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 49.1103709999976,
+        "median": 58.537434999998084,
+        "p95": 66.63047970000001,
+        "max": 83.86405799999608
+      },
+      "wrist_to_command_ms": {
+        "min": 37.19163399999559,
+        "median": 51.266487999999555,
+        "p95": 65.77757109999999,
+        "max": 72.41904899999696
+      },
+      "ready_to_command_ms": {
+        "min": 1.8253119999940282,
+        "median": 18.268144999999958,
+        "p95": 21.636380900000063,
+        "max": 36.77900600000328
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -0.24958200000035902,
+        "median": 5.749068000000079,
+        "p95": 11.953808799999877,
+        "max": 12.68225999999828
+      },
+      "state_bracket_ms": {
+        "min": 32.804968000000656,
+        "median": 33.333603000002654,
+        "p95": 33.432980099998844,
+        "max": 33.79104100000063
+      },
+      "control_cycle_ms": {
+        "min": 30.756715000002544,
+        "median": 33.32511699999685,
+        "p95": 34.228050699998924,
+        "max": 35.9471340000006
+      },
+      "command_interval_ms": {
+        "min": 30.756715000002544,
+        "median": 33.324057499998446,
+        "p95": 34.22822124999891,
+        "max": 35.9471340000006
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34797399999889,
+        "p95": 33.349339000003475,
+        "max": 33.374294999999776
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.04169600000025753,
+        "median": 1.04070633333464,
+        "p95": 1.669036366668708,
+        "max": 3.7962736666656838
+      }
+    },
+    "startup_action0_lag_ms": 65.76490200000002,
+    "startup_action19_time_from_obs0_ms": 700.7504729999999
+  },
+  {
+    "episode": 3,
+    "frames": 1145,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 46.207414999999585,
+        "median": 71.80068099999914,
+        "p95": 79.36955679999933,
+        "max": 81.02344699999975
+      },
+      "wrist_to_command_ms": {
+        "min": 38.417044999999206,
+        "median": 56.459849999999534,
+        "p95": 70.89140340000029,
+        "max": 72.95463800000057
+      },
+      "ready_to_command_ms": {
+        "min": 0.9310070000001502,
+        "median": 19.816934000001396,
+        "p95": 27.323243000000012,
+        "max": 36.431774000000416
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 6.823203999999805,
+        "median": 11.10064599999916,
+        "p95": 17.772402999997894,
+        "max": 19.038006000002383
+      },
+      "state_bracket_ms": {
+        "min": 32.931945000001406,
+        "median": 33.33319499999998,
+        "p95": 33.45406999999909,
+        "max": 33.73987899999875
+      },
+      "control_cycle_ms": {
+        "min": 31.086468999999894,
+        "median": 33.337234999997634,
+        "p95": 34.38859480000076,
+        "max": 35.214686999999856
+      },
+      "command_interval_ms": {
+        "min": 31.086468999999894,
+        "median": 33.336865499999035,
+        "p95": 34.389118600000664,
+        "max": 35.214686999999856
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347981499999065,
+        "p95": 33.349370199999974,
+        "max": 33.35069999999973
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.9867123333341397,
+        "median": -1.2247036666668265,
+        "p95": -0.2619611333329887,
+        "max": 0.6264369999993136
+      }
+    },
+    "startup_action0_lag_ms": 52.386517999999995,
+    "startup_action19_time_from_obs0_ms": 684.245713
+  },
+  {
+    "episode": 4,
+    "frames": 1018,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 0,
+    "wrist_repeated_frames": 0,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 53.17640100000176,
+        "median": 61.25451950000027,
+        "p95": 67.48340919999995,
+        "max": 69.56650999999997
+      },
+      "wrist_to_command_ms": {
+        "min": 34.052041999999005,
+        "median": 49.578204499997724,
+        "p95": 60.48556719999998,
+        "max": 61.57827699999974
+      },
+      "ready_to_command_ms": {
+        "min": 1.299893999998858,
+        "median": 16.101550500000172,
+        "p95": 21.827660049999807,
+        "max": 26.82071400000008
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 5.007800999999645,
+        "median": 11.661995999999064,
+        "p95": 19.190611550000547,
+        "max": 20.001887000002938
+      },
+      "state_bracket_ms": {
+        "min": 32.66552800000255,
+        "median": 33.33352999999928,
+        "p95": 33.43338175000117,
+        "max": 33.98155099999656
+      },
+      "control_cycle_ms": {
+        "min": 31.795783999999827,
+        "median": 33.33265799999907,
+        "p95": 34.23633845000009,
+        "max": 35.19803899999374
+      },
+      "command_interval_ms": {
+        "min": 31.795783999999827,
+        "median": 33.332633000000556,
+        "p95": 34.22003559999958,
+        "max": 35.19803899999374
+      },
+      "main_capture_interval_ms": {
+        "min": 33.32905400000003,
+        "median": 33.348179000000755,
+        "p95": 33.35134060000016,
+        "max": 33.36665099999997
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.4857593333335029,
+        "median": -0.5099795000003127,
+        "p95": 0.2866267166678149,
+        "max": 0.8593493333322044
+      }
+    },
+    "startup_action0_lag_ms": 69.42143100000001,
+    "startup_action19_time_from_obs0_ms": 701.355467
+  },
+  {
+    "episode": 5,
+    "frames": 1041,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 33.91715499999748,
+        "median": 42.40192099999973,
+        "p95": 66.90086900000125,
+        "max": 69.14603500000283
+      },
+      "wrist_to_command_ms": {
+        "min": 39.79988699999737,
+        "median": 52.01921099999929,
+        "p95": 71.552595,
+        "max": 75.12116800000257
+      },
+      "ready_to_command_ms": {
+        "min": 0.9502119999993397,
+        "median": 10.72285500000092,
+        "p95": 33.991201999995724,
+        "max": 36.70710400000132
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -13.095063999999823,
+        "median": -8.4854529999987,
+        "p95": -5.329280999998076,
+        "max": -2.3497629999980063
+      },
+      "state_bracket_ms": {
+        "min": 32.519618000002026,
+        "median": 33.3330690000011,
+        "p95": 33.44173400000017,
+        "max": 34.12004500000165
+      },
+      "control_cycle_ms": {
+        "min": 30.03557000000079,
+        "median": 33.32882100000045,
+        "p95": 34.16101799999893,
+        "max": 36.68428099999943
+      },
+      "command_interval_ms": {
+        "min": 30.03557000000079,
+        "median": 33.32881600000049,
+        "p95": 34.16182734999893,
+        "max": 36.68428099999943
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347812500000074,
+        "p95": 33.3510247500044,
+        "max": 33.37866100000042
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.7832549999994285,
+        "median": -0.9704566666641767,
+        "p95": -0.02612333332763228,
+        "max": 2.907921666665203
+      }
+    },
+    "startup_action0_lag_ms": 49.60725300000001,
+    "startup_action19_time_from_obs0_ms": 682.299836
+  },
+  {
+    "episode": 6,
+    "frames": 1103,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 46.2787870000021,
+        "median": 55.37511699999875,
+        "p95": 79.39660969999807,
+        "max": 80.87852399999917
+      },
+      "wrist_to_command_ms": {
+        "min": 35.011125999997006,
+        "median": 51.81115500000111,
+        "p95": 66.47578849999825,
+        "max": 68.14408000000327
+      },
+      "ready_to_command_ms": {
+        "min": 1.294481000002179,
+        "median": 16.691849999999064,
+        "p95": 26.657748599999486,
+        "max": 36.980979000002634
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 2.0430680000003143,
+        "median": 7.331151000002478,
+        "p95": 15.2148347000022,
+        "max": 15.821015999996746
+      },
+      "state_bracket_ms": {
+        "min": 32.69384100000039,
+        "median": 33.332719000000566,
+        "p95": 33.4485593999986,
+        "max": 34.1092560000007
+      },
+      "control_cycle_ms": {
+        "min": 31.70196599999997,
+        "median": 33.33233100000044,
+        "p95": 34.23882569999943,
+        "max": 34.89513399999966
+      },
+      "command_interval_ms": {
+        "min": 31.70196599999997,
+        "median": 33.33220550000071,
+        "p95": 34.23907284999937,
+        "max": 34.89513399999966
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.3478984999993,
+        "p95": 33.34922254999837,
+        "max": 33.36464699999908
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.2974606666631416,
+        "median": -0.30706133333779917,
+        "p95": 0.4040736666659937,
+        "max": 0.8946953333328622
+      }
+    },
+    "startup_action0_lag_ms": 59.828358,
+    "startup_action19_time_from_obs0_ms": 692.9314509999999
+  },
+  {
+    "episode": 7,
+    "frames": 1042,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 0,
+    "wrist_repeated_frames": 0,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 50.661215999994624,
+        "median": 58.3449509999987,
+        "p95": 65.63869674999997,
+        "max": 67.21009
+      },
+      "wrist_to_command_ms": {
+        "min": 52.543608000000575,
+        "median": 65.63206050000048,
+        "p95": 77.4135580999999,
+        "max": 78.9433810000002
+      },
+      "ready_to_command_ms": {
+        "min": 9.854698999999911,
+        "median": 20.49681300000028,
+        "p95": 22.285959500000008,
+        "max": 36.010876999999944
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -12.435942999999838,
+        "median": -7.697268000000257,
+        "p95": -3.8314461499968644,
+        "max": -1.8096240000033958
+      },
+      "state_bracket_ms": {
+        "min": 32.78176999999971,
+        "median": 33.3329495000001,
+        "p95": 33.448133400000415,
+        "max": 33.70055200000088
+      },
+      "control_cycle_ms": {
+        "min": 30.341947000000147,
+        "median": 33.331290000000266,
+        "p95": 34.217189499999925,
+        "max": 36.934118999999654
+      },
+      "command_interval_ms": {
+        "min": 30.341947000000147,
+        "median": 33.331579,
+        "p95": 34.218244999999925,
+        "max": 36.934118999999654
+      },
+      "main_capture_interval_ms": {
+        "min": 33.33072100000045,
+        "median": 33.34805899999971,
+        "p95": 33.34916300000046,
+        "max": 33.36488799999948
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.48754733333211675,
+        "median": 0.3967279999983475,
+        "p95": 1.2201707666667283,
+        "max": 4.066583333335316
+      }
+    },
+    "startup_action0_lag_ms": 65.836867,
+    "startup_action19_time_from_obs0_ms": 698.9917049999999
+  },
+  {
+    "episode": 8,
+    "frames": 1127,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 38.8815900000008,
+        "median": 64.95898000000011,
+        "p95": 71.92614670000026,
+        "max": 73.42037700000148
+      },
+      "wrist_to_command_ms": {
+        "min": 33.70289699999951,
+        "median": 56.22243799999893,
+        "p95": 67.68991839999927,
+        "max": 69.43829800000145
+      },
+      "ready_to_command_ms": {
+        "min": 1.2134439999993418,
+        "median": 19.757255999998335,
+        "p95": 23.65364069999992,
+        "max": 36.062928999999855
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -1.0754790000000458,
+        "median": 5.043310999997885,
+        "p95": 10.174735899997245,
+        "max": 10.902334999997265
+      },
+      "state_bracket_ms": {
+        "min": 32.724094000002424,
+        "median": 33.33331700000031,
+        "p95": 33.463085599999154,
+        "max": 33.912158999999775
+      },
+      "control_cycle_ms": {
+        "min": 31.65635799999933,
+        "median": 33.32764200000149,
+        "p95": 34.33181249999953,
+        "max": 34.93337900000171
+      },
+      "command_interval_ms": {
+        "min": 31.65635799999933,
+        "median": 33.32673500000194,
+        "p95": 34.3319372499995,
+        "max": 34.93337900000171
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34808750000029,
+        "p95": 33.34894950000056,
+        "max": 33.34962699999977
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.0958030000018937,
+        "median": -0.3557743333333363,
+        "p95": 0.624770900004279,
+        "max": 1.2941066666662948
+      }
+    },
+    "startup_action0_lag_ms": 45.290814,
+    "startup_action19_time_from_obs0_ms": 678.5904889999999
+  },
+  {
+    "episode": 9,
+    "frames": 1110,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 0,
+    "wrist_repeated_frames": 0,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 46.87207999999998,
+        "median": 55.85083799999957,
+        "p95": 63.414764049999924,
+        "max": 64.974233
+      },
+      "wrist_to_command_ms": {
+        "min": 38.3938619999995,
+        "median": 49.38720250000017,
+        "p95": 64.8132602500001,
+        "max": 66.47045799999998
+      },
+      "ready_to_command_ms": {
+        "min": 1.4243970000009654,
+        "median": 18.17491249999925,
+        "p95": 21.874259600000055,
+        "max": 23.252100999999968
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -2.357348999998621,
+        "median": 4.47403200000096,
+        "p95": 8.092270350000774,
+        "max": 8.869506999999999
+      },
+      "state_bracket_ms": {
+        "min": 33.071029999999446,
+        "median": 33.33333249999981,
+        "p95": 33.432843649999754,
+        "max": 33.55511300000025
+      },
+      "control_cycle_ms": {
+        "min": 31.68958799999899,
+        "median": 33.325085999999615,
+        "p95": 34.22996244999976,
+        "max": 34.861154000005
+      },
+      "command_interval_ms": {
+        "min": 31.68958799999899,
+        "median": 33.32587699999934,
+        "p95": 34.229965399999784,
+        "max": 34.861154000005
+      },
+      "main_capture_interval_ms": {
+        "min": 33.276007999999635,
+        "median": 33.34778500000013,
+        "p95": 33.35145360000027,
+        "max": 33.420180000000244
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.8086019999993255,
+        "median": 0.26101266666689327,
+        "p95": 0.9191630166664132,
+        "max": 1.4778846666647638
+      }
+    },
+    "startup_action0_lag_ms": 63.879429,
+    "startup_action19_time_from_obs0_ms": 698.0396479999999
+  },
+  {
+    "episode": 10,
+    "frames": 993,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 59.71707200000154,
+        "median": 67.08314899999834,
+        "p95": 74.55115579999998,
+        "max": 94.91894800000011
+      },
+      "wrist_to_command_ms": {
+        "min": 37.58280699999972,
+        "median": 50.42584199999922,
+        "p95": 63.83991640000001,
+        "max": 73.11861299999833
+      },
+      "ready_to_command_ms": {
+        "min": 1.859845999998555,
+        "median": 14.8451749999996,
+        "p95": 22.586785200000083,
+        "max": 38.03319800000082
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 10.446212000000067,
+        "median": 18.404989000000427,
+        "p95": 22.697972600001037,
+        "max": 23.361537999999626
+      },
+      "state_bracket_ms": {
+        "min": 32.77024599999834,
+        "median": 33.333600999999824,
+        "p95": 33.45422640000013,
+        "max": 33.87177699999988
+      },
+      "control_cycle_ms": {
+        "min": 29.165018999998793,
+        "median": 33.33363700000014,
+        "p95": 34.31173559999863,
+        "max": 37.4510370000003
+      },
+      "command_interval_ms": {
+        "min": 29.165018999998793,
+        "median": 33.33378650000274,
+        "p95": 34.311805799998574,
+        "max": 37.4510370000003
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34775950000157,
+        "p95": 33.35122545000004,
+        "max": 33.36116599999883
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.030737666667057795,
+        "median": 0.4111486666664721,
+        "p95": 1.6934622000016386,
+        "max": 4.228905333333088
+      }
+    },
+    "startup_action0_lag_ms": 73.388245,
+    "startup_action19_time_from_obs0_ms": 707.6291419999999
+  },
+  {
+    "episode": 11,
+    "frames": 999,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 38.64247899999995,
+        "median": 47.3016089999998,
+        "p95": 71.82097540000143,
+        "max": 73.17897400000106
+      },
+      "wrist_to_command_ms": {
+        "min": 39.468202000001895,
+        "median": 48.87024800000006,
+        "p95": 70.96894819999875,
+        "max": 73.21926299999859
+      },
+      "ready_to_command_ms": {
+        "min": 1.871835999999405,
+        "median": 13.802993999999735,
+        "p95": 33.134520899997966,
+        "max": 36.62971500000012
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -2.119730999998737,
+        "median": 0.5891379999987123,
+        "p95": 4.714217400000819,
+        "max": 5.008930000002465
+      },
+      "state_bracket_ms": {
+        "min": 31.931943000000018,
+        "median": 33.333325999999275,
+        "p95": 33.4405666000011,
+        "max": 34.73319999999802
+      },
+      "control_cycle_ms": {
+        "min": 28.239517999999464,
+        "median": 33.32840399999881,
+        "p95": 34.37988879999825,
+        "max": 37.67818300000059
+      },
+      "command_interval_ms": {
+        "min": 28.239517999999464,
+        "median": 33.32818649999947,
+        "p95": 34.37300279999924,
+        "max": 37.67818300000059
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34799699999769,
+        "p95": 33.3516198000007,
+        "max": 33.42676199999994
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.7435409999997376,
+        "median": -0.9431476666668104,
+        "p95": -0.029831766666713874,
+        "max": 3.6570386666667787
+      }
+    },
+    "startup_action0_lag_ms": 50.049499000000004,
+    "startup_action19_time_from_obs0_ms": 683.307713
+  },
+  {
+    "episode": 12,
+    "frames": 966,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 52.24162700000079,
+        "median": 79.29569500000078,
+        "p95": 85.41206375000066,
+        "max": 87.04773299999857
+      },
+      "wrist_to_command_ms": {
+        "min": 38.305680000000564,
+        "median": 56.625072000001,
+        "p95": 69.51552575000042,
+        "max": 72.88063800000089
+      },
+      "ready_to_command_ms": {
+        "min": 1.2841090000001998,
+        "median": 20.411564499999812,
+        "p95": 23.269005750000904,
+        "max": 36.64066699999857
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 13.274329999999779,
+        "median": 16.120275500000503,
+        "p95": 24.66437350000028,
+        "max": 25.502592999998797
+      },
+      "state_bracket_ms": {
+        "min": 32.875316000000154,
+        "median": 33.333261000001,
+        "p95": 33.436946250000155,
+        "max": 33.88813800000001
+      },
+      "control_cycle_ms": {
+        "min": 31.568346000000247,
+        "median": 33.34350650000006,
+        "p95": 34.320539249999,
+        "max": 35.60418100000007
+      },
+      "command_interval_ms": {
+        "min": 31.568346000000247,
+        "median": 33.34325199999988,
+        "p95": 34.32103559999895,
+        "max": 35.60418100000007
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34801799999809,
+        "p95": 33.35046720000108,
+        "max": 33.37066799999988
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.1211493333345146,
+        "median": -0.11951000000109957,
+        "p95": 0.5754222500002903,
+        "max": 1.3973666666693418
+      }
+    },
+    "startup_action0_lag_ms": 57.723479000000005,
+    "startup_action19_time_from_obs0_ms": 691.69289
+  },
+  {
+    "episode": 13,
+    "frames": 1154,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [
+      {
+        "frame": 692,
+        "cycle_ms": 43.40546199999906,
+        "sequence": 20920,
+        "command_interval_ms": 43.40546199999906
+      },
+      {
+        "frame": 693,
+        "cycle_ms": 22.416972000002033,
+        "sequence": 20921,
+        "command_interval_ms": 22.416972000002033
+      }
+    ],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 55.519159999999346,
+        "median": 64.004132,
+        "p95": 88.11082109999973,
+        "max": 99.66466099999849
+      },
+      "wrist_to_command_ms": {
+        "min": 51.11978700000108,
+        "median": 65.50430200000035,
+        "p95": 87.8041792500003,
+        "max": 98.19710400000048
+      },
+      "ready_to_command_ms": {
+        "min": 10.13259000000133,
+        "median": 21.1861855000004,
+        "p95": 50.50716010000009,
+        "max": 62.135811999997514
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -3.597649000000036,
+        "median": 2.0748859999999425,
+        "p95": 7.652768249999298,
+        "max": 11.301064000001304
+      },
+      "state_bracket_ms": {
+        "min": 23.060365999999277,
+        "median": 33.33213149999992,
+        "p95": 33.437304549999915,
+        "max": 43.474763999999055
+      },
+      "control_cycle_ms": {
+        "min": 22.416972000002033,
+        "median": 33.33658900000014,
+        "p95": 34.19336130000071,
+        "max": 43.40546199999906
+      },
+      "command_interval_ms": {
+        "min": 22.416972000002033,
+        "median": 33.33649400000027,
+        "p95": 34.19377620000081,
+        "max": 43.40546199999906
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347865999999726,
+        "p95": 33.351995200000715,
+        "max": 33.36217000000019
+      },
+      "nominal_grid_drift_ms": {
+        "min": -2.3063026666663156,
+        "median": -1.221578666667611,
+        "p95": -0.5822224833340726,
+        "max": 9.157740333332498
+      }
+    },
+    "startup_action0_lag_ms": 67.246086,
+    "startup_action19_time_from_obs0_ms": 698.4005960000001
+  },
+  {
+    "episode": 14,
+    "frames": 1007,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 0,
+    "wrist_repeated_frames": 0,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 60.61425899999762,
+        "median": 67.89918399999806,
+        "p95": 75.70445579999999,
+        "max": 76.669769
+      },
+      "wrist_to_command_ms": {
+        "min": 41.01807800000046,
+        "median": 51.795116000000974,
+        "p95": 64.15831569999995,
+        "max": 65.38318799999998
+      },
+      "ready_to_command_ms": {
+        "min": 3.9169269999987932,
+        "median": 17.072754999999162,
+        "p95": 21.721807200000015,
+        "max": 26.417476999999995
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 10.811114999999205,
+        "median": 15.73761199999879,
+        "p95": 20.98839260000176,
+        "max": 21.869005999999303
+      },
+      "state_bracket_ms": {
+        "min": 32.86492400000185,
+        "median": 33.33354200000116,
+        "p95": 33.4500282999997,
+        "max": 33.842608000000496
+      },
+      "control_cycle_ms": {
+        "min": 29.719460000002584,
+        "median": 33.33368799999903,
+        "p95": 34.276603799998284,
+        "max": 37.30612600000072
+      },
+      "command_interval_ms": {
+        "min": 29.719460000002584,
+        "median": 33.333724499999384,
+        "p95": 34.2771029999982,
+        "max": 37.30612600000072
+      },
+      "main_capture_interval_ms": {
+        "min": 33.319836999996966,
+        "median": 33.348060499998944,
+        "p95": 33.349713,
+        "max": 33.375196000001495
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.4856666666661624,
+        "median": 0.04736100000002352,
+        "p95": 1.2042161000017866,
+        "max": 3.5288376666677834
+      }
+    },
+    "startup_action0_lag_ms": 75.800816,
+    "startup_action19_time_from_obs0_ms": 709.062943
+  },
+  {
+    "episode": 15,
+    "frames": 977,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 0,
+    "wrist_repeated_frames": 0,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 39.09852700000016,
+        "median": 47.2213349999997,
+        "p95": 53.845404799999976,
+        "max": 54.93017999999999
+      },
+      "wrist_to_command_ms": {
+        "min": 38.10904399999515,
+        "median": 49.36055399999972,
+        "p95": 62.20179079999997,
+        "max": 63.24213500000009
+      },
+      "ready_to_command_ms": {
+        "min": 2.4314749999980734,
+        "median": 13.818434000000934,
+        "p95": 20.941606799999946,
+        "max": 22.345731000000036
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -9.49718399999977,
+        "median": -1.751433999999108,
+        "p95": 1.1168955999984564,
+        "max": 1.85411000000002
+      },
+      "state_bracket_ms": {
+        "min": 33.15070500000061,
+        "median": 33.33362500000092,
+        "p95": 33.4432521999986,
+        "max": 33.52822699999969
+      },
+      "control_cycle_ms": {
+        "min": 29.302215999997827,
+        "median": 33.33043499999988,
+        "p95": 34.239611799998215,
+        "max": 36.52580800000038
+      },
+      "command_interval_ms": {
+        "min": 29.302215999997827,
+        "median": 33.33042550000087,
+        "p95": 34.240036999998225,
+        "max": 36.52580800000038
+      },
+      "main_capture_interval_ms": {
+        "min": 33.33045900000009,
+        "median": 33.34794399999974,
+        "p95": 33.34965024999947,
+        "max": 33.365886000000344
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.560369666663064,
+        "median": -0.41931933333305693,
+        "p95": 0.19079666666641512,
+        "max": 3.185121666668067
+      }
+    },
+    "startup_action0_lag_ms": 54.76431,
+    "startup_action19_time_from_obs0_ms": 687.6160540000001
+  },
+  {
+    "episode": 16,
+    "frames": 997,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 52.195494999999426,
+        "median": 60.641325000000634,
+        "p95": 85.48934080000024,
+        "max": 87.25062499999936
+      },
+      "wrist_to_command_ms": {
+        "min": 35.61104699999973,
+        "median": 52.1965859999991,
+        "p95": 67.12891519999857,
+        "max": 70.02382800000007
+      },
+      "ready_to_command_ms": {
+        "min": 1.1437189999981001,
+        "median": 15.932442000000435,
+        "p95": 32.858565999998746,
+        "max": 36.38923799999816
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 5.462785999999831,
+        "median": 13.571445000000182,
+        "p95": 19.16326799999908,
+        "max": 20.60102800000152
+      },
+      "state_bracket_ms": {
+        "min": 32.75299599999926,
+        "median": 33.33297500000043,
+        "p95": 33.44667339999887,
+        "max": 33.80381099999852
+      },
+      "control_cycle_ms": {
+        "min": 31.22403900000137,
+        "median": 33.32220199999725,
+        "p95": 34.251468800000495,
+        "max": 34.92633400000145
+      },
+      "command_interval_ms": {
+        "min": 31.22403900000137,
+        "median": 33.32327449999806,
+        "p95": 34.25212250000054,
+        "max": 34.92633400000145
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347953000001596,
+        "p95": 33.34954049999972,
+        "max": 33.36083200000006
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.1353203333328565,
+        "median": -0.11322966666682532,
+        "p95": 0.5419541333299804,
+        "max": 1.1642423333313445
+      }
+    },
+    "startup_action0_lag_ms": 64.720509,
+    "startup_action19_time_from_obs0_ms": 698.4788550000001
+  },
+  {
+    "episode": 17,
+    "frames": 992,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 33.235382999999175,
+        "median": 60.404982999999746,
+        "p95": 66.19823990000046,
+        "max": 67.97583400000029
+      },
+      "wrist_to_command_ms": {
+        "min": 35.72154300000108,
+        "median": 59.246769999997895,
+        "p95": 69.63016865000017,
+        "max": 70.99388900000037
+      },
+      "ready_to_command_ms": {
+        "min": 0.9760260000000187,
+        "median": 20.176194500001188,
+        "p95": 34.36194814999993,
+        "max": 35.834333000000385
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -7.57624400000001,
+        "median": -3.047305499999098,
+        "p95": 2.86214990000264,
+        "max": 3.9030300000000295
+      },
+      "state_bracket_ms": {
+        "min": 32.592349999999826,
+        "median": 33.333679999999255,
+        "p95": 33.45168424999958,
+        "max": 34.075458000000225
+      },
+      "control_cycle_ms": {
+        "min": 28.76841799999852,
+        "median": 33.32149499999926,
+        "p95": 34.26524514999976,
+        "max": 37.39602400000308
+      },
+      "command_interval_ms": {
+        "min": 28.76841799999852,
+        "median": 33.32116000000007,
+        "p95": 34.26654749999969,
+        "max": 37.39602400000308
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347339999999726,
+        "p95": 33.35188200000161,
+        "max": 33.35690399999969
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.008137333333714,
+        "median": 0.0039163333340752615,
+        "p95": 0.801170600003331,
+        "max": 4.775569000003088
+      }
+    },
+    "startup_action0_lag_ms": 37.597272000000004,
+    "startup_action19_time_from_obs0_ms": 671.356665
+  },
+  {
+    "episode": 18,
+    "frames": 978,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 45.07951400000021,
+        "median": 71.84050149999877,
+        "p95": 78.30138325000041,
+        "max": 79.99967900000016
+      },
+      "wrist_to_command_ms": {
+        "min": 37.05007200000043,
+        "median": 59.0881250000006,
+        "p95": 66.75998105000035,
+        "max": 71.16117200000005
+      },
+      "ready_to_command_ms": {
+        "min": 1.201259000000121,
+        "median": 20.36527599999971,
+        "p95": 32.94303585000038,
+        "max": 36.63535799999984
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 5.184261000000023,
+        "median": 12.693732999998986,
+        "p95": 16.941074799999534,
+        "max": 17.431160000001
+      },
+      "state_bracket_ms": {
+        "min": 32.80164199999547,
+        "median": 33.33319500000087,
+        "p95": 33.44895144999986,
+        "max": 33.88332599999977
+      },
+      "control_cycle_ms": {
+        "min": 28.738921000002193,
+        "median": 33.33525650000002,
+        "p95": 34.30322835000066,
+        "max": 38.14136200000107
+      },
+      "command_interval_ms": {
+        "min": 28.738921000002193,
+        "median": 33.33533600000038,
+        "p95": 34.30372180000063,
+        "max": 38.14136200000107
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.3479109999999,
+        "p95": 33.350140599999634,
+        "max": 33.35159800000298
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.6862783333332345,
+        "median": -0.2182266666679311,
+        "p95": 0.9309736833336575,
+        "max": 4.465794999997996
+      }
+    },
+    "startup_action0_lag_ms": 47.812802000000005,
+    "startup_action19_time_from_obs0_ms": 682.0259189999999
+  },
+  {
+    "episode": 19,
+    "frames": 1045,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 38.240141999999366,
+        "median": 46.87829900000118,
+        "p95": 71.06387639999951,
+        "max": 73.01173600000155
+      },
+      "wrist_to_command_ms": {
+        "min": 37.69224899999912,
+        "median": 48.531127000000396,
+        "p95": 70.09188959999904,
+        "max": 72.41435000000251
+      },
+      "ready_to_command_ms": {
+        "min": 0.8933800000008318,
+        "median": 14.343262000000578,
+        "p95": 34.13700360000149,
+        "max": 36.801955000001385
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -6.909051999999916,
+        "median": -2.302084000000093,
+        "p95": 1.1086151999990077,
+        "max": 3.7626099999954477
+      },
+      "state_bracket_ms": {
+        "min": 32.506544000000304,
+        "median": 33.332301999999814,
+        "p95": 33.43649320000068,
+        "max": 34.15390099999982
+      },
+      "control_cycle_ms": {
+        "min": 31.617469000000398,
+        "median": 33.32542300000085,
+        "p95": 34.22543220000094,
+        "max": 35.127204000000134
+      },
+      "command_interval_ms": {
+        "min": 31.617469000000398,
+        "median": 33.325383000001096,
+        "p95": 34.225854150000856,
+        "max": 35.127204000000134
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34814750000081,
+        "p95": 33.34996985000279,
+        "max": 33.37238799999653
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.5882016666672882,
+        "median": -0.5941903333344101,
+        "p95": 0.18680413333309595,
+        "max": 0.6236203333358503
+      }
+    },
+    "startup_action0_lag_ms": 52.811648000000005,
+    "startup_action19_time_from_obs0_ms": 685.847608
+  },
+  {
+    "episode": 20,
+    "frames": 1057,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 50.79626999999931,
+        "median": 59.749397000000926,
+        "p95": 83.69796540000252,
+        "max": 85.31262900000058
+      },
+      "wrist_to_command_ms": {
+        "min": 30.455577000001455,
+        "median": 50.19686400000012,
+        "p95": 63.61618140000118,
+        "max": 65.98997500000081
+      },
+      "ready_to_command_ms": {
+        "min": 0.6618500000001859,
+        "median": 15.003866000000698,
+        "p95": 23.579417599999886,
+        "max": 36.71615300000042
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 6.668770999999296,
+        "median": 13.289268999999493,
+        "p95": 20.446053800002062,
+        "max": 21.603902000002506
+      },
+      "state_bracket_ms": {
+        "min": 32.98672400000058,
+        "median": 33.33360200000257,
+        "p95": 33.43429419999957,
+        "max": 33.6502749999994
+      },
+      "control_cycle_ms": {
+        "min": 31.694190999999705,
+        "median": 33.33308599999896,
+        "p95": 34.20429819999811,
+        "max": 35.02123200000007
+      },
+      "command_interval_ms": {
+        "min": 31.694190999999705,
+        "median": 33.33306549999904,
+        "p95": 34.20319799999927,
+        "max": 35.02123200000007
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.348024000000365,
+        "p95": 33.34912425000014,
+        "max": 33.36214299999973
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.7441713333319342,
+        "median": -0.6514500000012191,
+        "p95": 0.19514700000016197,
+        "max": 0.46405866666709983
+      }
+    },
+    "startup_action0_lag_ms": 65.37823900000001,
+    "startup_action19_time_from_obs0_ms": 698.1182339999999
+  },
+  {
+    "episode": 21,
+    "frames": 1067,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 33.325616000000835,
+        "median": 60.09520000000279,
+        "p95": 66.2105129000004,
+        "max": 68.21736500000064
+      },
+      "wrist_to_command_ms": {
+        "min": 39.10024900000053,
+        "median": 60.959906000000785,
+        "p95": 72.03435090000028,
+        "max": 73.82827500000033
+      },
+      "ready_to_command_ms": {
+        "min": 1.5981590000002655,
+        "median": 20.161506999997414,
+        "p95": 34.01183010000057,
+        "max": 37.2345119999995
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -10.953724000000165,
+        "median": -5.855731999998781,
+        "p95": -0.5526589999998782,
+        "max": 0.7929280000027461
+      },
+      "state_bracket_ms": {
+        "min": 32.70476999999872,
+        "median": 33.33273899999867,
+        "p95": 33.44892000000028,
+        "max": 33.765795000000765
+      },
+      "control_cycle_ms": {
+        "min": 29.535711000001186,
+        "median": 33.33172399999995,
+        "p95": 34.2485213000014,
+        "max": 36.80463599999939
+      },
+      "command_interval_ms": {
+        "min": 29.535711000001186,
+        "median": 33.331965499999505,
+        "p95": 34.249008250001545,
+        "max": 36.80463599999939
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34771950000026,
+        "p95": 33.35037675000052,
+        "max": 33.36823400000011
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.3856289999983886,
+        "median": 0.5914686666663727,
+        "p95": 1.4312971666676333,
+        "max": 4.927793333330044
+      }
+    },
+    "startup_action0_lag_ms": 39.49778999999999,
+    "startup_action19_time_from_obs0_ms": 672.6207589999999
+  },
+  {
+    "episode": 22,
+    "frames": 1002,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 44.38189700000095,
+        "median": 52.89582899999998,
+        "p95": 77.59223149999829,
+        "max": 78.73742800000016
+      },
+      "wrist_to_command_ms": {
+        "min": 33.763554000000084,
+        "median": 51.5009605,
+        "p95": 67.87975429999999,
+        "max": 68.97251000000182
+      },
+      "ready_to_command_ms": {
+        "min": 0.864529999997643,
+        "median": 15.50039799999997,
+        "p95": 23.742705449998166,
+        "max": 35.81469399999904
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 1.3762840000000003,
+        "median": 9.28175499999817,
+        "p95": 15.869575649999312,
+        "max": 16.57184300000125
+      },
+      "state_bracket_ms": {
+        "min": 32.797639999998296,
+        "median": 33.33259050000059,
+        "p95": 33.44407655000161,
+        "max": 33.88933500000135
+      },
+      "control_cycle_ms": {
+        "min": 31.60343200000426,
+        "median": 33.328437500000696,
+        "p95": 34.38770654999992,
+        "max": 34.920406000001236
+      },
+      "command_interval_ms": {
+        "min": 31.60343200000426,
+        "median": 33.32813899999998,
+        "p95": 34.38787099999985,
+        "max": 34.920406000001236
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.3480220000002,
+        "p95": 33.34910599999996,
+        "max": 33.363534999999885
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.6026173333330007,
+        "median": -0.7262688333327105,
+        "p95": 0.0879204833332369,
+        "max": 0.9938156666677855
+      }
+    },
+    "startup_action0_lag_ms": 53.27554999999999,
+    "startup_action19_time_from_obs0_ms": 685.9927499999999
+  },
+  {
+    "episode": 23,
+    "frames": 1022,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 0,
+    "wrist_repeated_frames": 0,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 45.4739760000038,
+        "median": 53.57635299999863,
+        "p95": 59.51055715000012,
+        "max": 61.490447999999994
+      },
+      "wrist_to_command_ms": {
+        "min": 48.462016999998525,
+        "median": 62.0267590000001,
+        "p95": 68.20337580000037,
+        "max": 71.894875
+      },
+      "ready_to_command_ms": {
+        "min": 12.067156000000523,
+        "median": 19.93291850000034,
+        "p95": 22.03722209999892,
+        "max": 23.75986699999988
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -11.362634000001037,
+        "median": -7.850935499999934,
+        "p95": -3.2126773000003443,
+        "max": -2.397621999996602
+      },
+      "state_bracket_ms": {
+        "min": 32.45711699999987,
+        "median": 33.332260999999974,
+        "p95": 33.44264154999991,
+        "max": 34.084355000000066
+      },
+      "control_cycle_ms": {
+        "min": 31.6630100000026,
+        "median": 33.33439450000175,
+        "p95": 34.227441699999915,
+        "max": 34.98672499999999
+      },
+      "command_interval_ms": {
+        "min": 31.6630100000026,
+        "median": 33.33335900000378,
+        "p95": 34.22369299999772,
+        "max": 34.98672499999999
+      },
+      "main_capture_interval_ms": {
+        "min": 33.33634700000054,
+        "median": 33.3480090000009,
+        "p95": 33.349131999997894,
+        "max": 33.35956199999934
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.7214589999996477,
+        "median": -0.6349004999997021,
+        "p95": 0.011827649998785704,
+        "max": 0.4929743333335068
+      }
+    },
+    "startup_action0_lag_ms": 61.490447999999994,
+    "startup_action19_time_from_obs0_ms": 694.024944
+  },
+  {
+    "episode": 24,
+    "frames": 927,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 36.94529199999997,
+        "median": 65.07988099999906,
+        "p95": 69.69347289999992,
+        "max": 71.62739800000007
+      },
+      "wrist_to_command_ms": {
+        "min": 34.53994000000001,
+        "median": 59.161139999998724,
+        "p95": 67.82250220000022,
+        "max": 70.12777200000009
+      },
+      "ready_to_command_ms": {
+        "min": 1.2527109999999897,
+        "median": 20.39476400000062,
+        "p95": 26.735727300000043,
+        "max": 36.40701300000004
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 1.3165630000000483,
+        "median": 5.73978700000044,
+        "p95": 10.027426099999914,
+        "max": 10.373813000001064
+      },
+      "state_bracket_ms": {
+        "min": 32.806838999999975,
+        "median": 33.33245099999971,
+        "p95": 33.44756260000139,
+        "max": 33.91153699999999
+      },
+      "control_cycle_ms": {
+        "min": 31.42840800000002,
+        "median": 33.34057300000026,
+        "p95": 34.145662700000706,
+        "max": 35.40945800000001
+      },
+      "command_interval_ms": {
+        "min": 31.42840800000002,
+        "median": 33.34055500000011,
+        "p95": 34.145777750000605,
+        "max": 35.40945800000001
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347835500000755,
+        "p95": 33.35088999999947,
+        "max": 33.36138499999919
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.15850033333331126,
+        "median": 0.8694796666688376,
+        "p95": 1.6367033666680795,
+        "max": 2.3592736666664393
+      }
+    },
+    "startup_action0_lag_ms": 37.216548,
+    "startup_action19_time_from_obs0_ms": 670.8626949999999
+  },
+  {
+    "episode": 25,
+    "frames": 937,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 0,
+    "wrist_repeated_frames": 0,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 44.5972139999995,
+        "median": 52.61733000000035,
+        "p95": 58.64297499999993,
+        "max": 59.676322000000006
+      },
+      "wrist_to_command_ms": {
+        "min": 39.897734000000185,
+        "median": 50.584226999998094,
+        "p95": 64.49480179999989,
+        "max": 65.38247200000002
+      },
+      "ready_to_command_ms": {
+        "min": 5.02150500000198,
+        "median": 17.47268900000165,
+        "p95": 21.585083599999898,
+        "max": 23.536765999999876
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -6.222884999999678,
+        "median": 1.0112090000014007,
+        "p95": 4.062216399999841,
+        "max": 4.747877999999872
+      },
+      "state_bracket_ms": {
+        "min": 33.10008600000103,
+        "median": 33.33332800000122,
+        "p95": 33.43013939999828,
+        "max": 33.53604099999785
+      },
+      "control_cycle_ms": {
+        "min": 31.628013000002397,
+        "median": 33.324561000000145,
+        "p95": 34.264099199999976,
+        "max": 34.89125900000012
+      },
+      "command_interval_ms": {
+        "min": 31.628013000002397,
+        "median": 33.32472699999989,
+        "p95": 34.264703999999924,
+        "max": 34.89125900000012
+      },
+      "main_capture_interval_ms": {
+        "min": 33.33302200000077,
+        "median": 33.34826550000081,
+        "p95": 33.35233424999995,
+        "max": 33.36807899999883
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.7802396666676259,
+        "median": 0.3190843333333304,
+        "p95": 0.9801494000008404,
+        "max": 1.6349563333299955
+      }
+    },
+    "startup_action0_lag_ms": 58.955772,
+    "startup_action19_time_from_obs0_ms": 692.5426029999999
+  },
+  {
+    "episode": 26,
+    "frames": 936,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 55.994986999998275,
+        "median": 63.98669650000066,
+        "p95": 88.73921949999985,
+        "max": 90.84356299999996
+      },
+      "wrist_to_command_ms": {
+        "min": 38.659401999996845,
+        "median": 46.87420350000071,
+        "p95": 71.24877100000226,
+        "max": 73.50629299999767
+      },
+      "ready_to_command_ms": {
+        "min": 1.2463529999990897,
+        "median": 13.909252000000372,
+        "p95": 21.970037999999942,
+        "max": 36.101813000001926
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 9.01531099999997,
+        "median": 16.11068249999903,
+        "p95": 17.582803999999452,
+        "max": 18.15619900000165
+      },
+      "state_bracket_ms": {
+        "min": 32.50754000000011,
+        "median": 33.333800499999455,
+        "p95": 33.47144174999908,
+        "max": 34.19652799999984
+      },
+      "control_cycle_ms": {
+        "min": 30.61828899999952,
+        "median": 33.32546199999964,
+        "p95": 34.37239150000026,
+        "max": 36.91325699999837
+      },
+      "command_interval_ms": {
+        "min": 30.61828899999952,
+        "median": 33.32544199999887,
+        "p95": 34.37255760000024,
+        "max": 36.91325699999837
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347667000001024,
+        "p95": 33.3498830999999,
+        "max": 33.370107000001425
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.9540856666667707,
+        "median": -0.14921733333306264,
+        "p95": 0.7516977500006128,
+        "max": 3.053675333333672
+      }
+    },
+    "startup_action0_lag_ms": 69.25596,
+    "startup_action19_time_from_obs0_ms": 702.704524
+  },
+  {
+    "episode": 27,
+    "frames": 981,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 35.95189999999704,
+        "median": 44.42154600000059,
+        "p95": 69.12890300000285,
+        "max": 70.75503500000124
+      },
+      "wrist_to_command_ms": {
+        "min": 40.276499999997384,
+        "median": 51.58605999999999,
+        "p95": 71.64136800000165,
+        "max": 74.38339299999797
+      },
+      "ready_to_command_ms": {
+        "min": 1.5023330000012436,
+        "median": 12.956725000000446,
+        "p95": 34.76103099999861,
+        "max": 36.9737360000002
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -8.97654000000081,
+        "median": -4.6128469999999755,
+        "p95": -0.38763099999883366,
+        "max": 0.49869300000082717
+      },
+      "state_bracket_ms": {
+        "min": 32.15928099999843,
+        "median": 33.33337000000003,
+        "p95": 33.4398139999994,
+        "max": 34.49149200000079
+      },
+      "control_cycle_ms": {
+        "min": 29.680027000001274,
+        "median": 33.3295420000006,
+        "p95": 34.34267100000099,
+        "max": 37.054221999998305
+      },
+      "command_interval_ms": {
+        "min": 29.680027000001274,
+        "median": 33.33058199999961,
+        "p95": 34.34286955000094,
+        "max": 37.054221999998305
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34796700000054,
+        "p95": 33.35188259999979,
+        "max": 33.35344899999981
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.126811333332256,
+        "median": -0.09618233333341664,
+        "p95": 0.6250380000000222,
+        "max": 2.8348363333314808
+      }
+    },
+    "startup_action0_lag_ms": 49.982147,
+    "startup_action19_time_from_obs0_ms": 683.6071059999999
+  },
+  {
+    "episode": 28,
+    "frames": 1005,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 49.38298200000091,
+        "median": 57.517257000000654,
+        "p95": 82.60712180000169,
+        "max": 85.64606599999891
+      },
+      "wrist_to_command_ms": {
+        "min": 33.586964999997804,
+        "median": 50.701479999998966,
+        "p95": 64.40600920000037,
+        "max": 68.69786199999695
+      },
+      "ready_to_command_ms": {
+        "min": 1.5430869999981667,
+        "median": 15.894144999998971,
+        "p95": 26.9424409999999,
+        "max": 37.70766799999947
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 2.068450999999527,
+        "median": 8.02110800000122,
+        "p95": 18.728558999997347,
+        "max": 19.532490999999652
+      },
+      "state_bracket_ms": {
+        "min": 32.923148999998375,
+        "median": 33.33332200000072,
+        "p95": 33.43835160000097,
+        "max": 33.69760600000049
+      },
+      "control_cycle_ms": {
+        "min": 29.420592000001022,
+        "median": 33.32433899999998,
+        "p95": 34.31089439999759,
+        "max": 36.57772799999748
+      },
+      "command_interval_ms": {
+        "min": 29.420592000001022,
+        "median": 33.324395500000215,
+        "p95": 34.31148379999742,
+        "max": 36.57772799999748
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34761450000023,
+        "p95": 33.34958865000015,
+        "max": 33.36728299999958
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.8977293333352065,
+        "median": 0.17571100000068895,
+        "p95": 0.8533952666665456,
+        "max": 3.0595786666651748
+      }
+    },
+    "startup_action0_lag_ms": 62.43143,
+    "startup_action19_time_from_obs0_ms": 696.4068249999999
+  },
+  {
+    "episode": 29,
+    "frames": 1000,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 33.23196899999914,
+        "median": 59.89327750000051,
+        "p95": 66.24119210000075,
+        "max": 67.98540900000027
+      },
+      "wrist_to_command_ms": {
+        "min": 42.961551999999514,
+        "median": 65.33345999999973,
+        "p95": 76.74630040000059,
+        "max": 78.11025600000043
+      },
+      "ready_to_command_ms": {
+        "min": 0.8472529999998812,
+        "median": 20.476325999999823,
+        "p95": 34.29676125000043,
+        "max": 36.31770800000034
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -12.514604000000151,
+        "median": -10.036723999999886,
+        "p95": -2.023801150001959,
+        "max": -1.3922529999987887
+      },
+      "state_bracket_ms": {
+        "min": 32.43591300000048,
+        "median": 33.33303450000091,
+        "p95": 33.466098399999744,
+        "max": 34.11522699999736
+      },
+      "control_cycle_ms": {
+        "min": 31.63527500000285,
+        "median": 33.330935500000436,
+        "p95": 34.387498899999905,
+        "max": 35.226498000000106
+      },
+      "command_interval_ms": {
+        "min": 31.63527500000285,
+        "median": 33.330750000001075,
+        "p95": 34.387635799999885,
+        "max": 35.226498000000106
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34799300000313,
+        "p95": 33.35100660000023,
+        "max": 33.3717870000001
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.7441963333363333,
+        "median": 0.07251083333237318,
+        "p95": 1.048314816664053,
+        "max": 1.8421893333346873
+      }
+    },
+    "startup_action0_lag_ms": 38.106410000000004,
+    "startup_action19_time_from_obs0_ms": 670.86735
+  },
+  {
+    "episode": 30,
+    "frames": 999,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 42.45611099999991,
+        "median": 68.26612700000112,
+        "p95": 75.33847509999987,
+        "max": 77.17365099999896
+      },
+      "wrist_to_command_ms": {
+        "min": 39.25025100000035,
+        "median": 56.85443600000184,
+        "p95": 71.51339570000201,
+        "max": 74.1881719999995
+      },
+      "ready_to_command_ms": {
+        "min": 1.2939210000002532,
+        "median": 19.452672999999976,
+        "p95": 23.191539700000508,
+        "max": 36.34464200000309
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -0.8572570000000002,
+        "median": 4.761236000000224,
+        "p95": 11.314087800000294,
+        "max": 11.440391000000716
+      },
+      "state_bracket_ms": {
+        "min": 33.002325000001775,
+        "median": 33.33324199999943,
+        "p95": 33.43419379999975,
+        "max": 33.689879000000644
+      },
+      "control_cycle_ms": {
+        "min": 29.692539000000018,
+        "median": 33.3324140000002,
+        "p95": 34.243254399999,
+        "max": 36.97841499999966
+      },
+      "command_interval_ms": {
+        "min": 29.692539000000018,
+        "median": 33.332403000001065,
+        "p95": 34.24392509999905,
+        "max": 36.97841499999966
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34780799999937,
+        "p95": 33.350883950000494,
+        "max": 33.36603300000007
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.4195193333321754,
+        "median": -0.7970319999994757,
+        "p95": 0.24482153333202897,
+        "max": 3.588975666666272
+      }
+    },
+    "startup_action0_lag_ms": 50.51571199999999,
+    "startup_action19_time_from_obs0_ms": 683.9758229999999
+  },
+  {
+    "episode": 31,
+    "frames": 949,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 36.1743400000023,
+        "median": 43.91816500000001,
+        "p95": 69.03559360000031,
+        "max": 70.95303699999889
+      },
+      "wrist_to_command_ms": {
+        "min": 35.046232999999205,
+        "median": 51.035703000000154,
+        "p95": 70.22518220000009,
+        "max": 72.27328999999827
+      },
+      "ready_to_command_ms": {
+        "min": 1.4575550000017756,
+        "median": 11.76440699999981,
+        "p95": 34.27203519999935,
+        "max": 36.55871599999827
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -8.048613000000149,
+        "median": -0.26396499999847833,
+        "p95": 2.7715881999981193,
+        "max": 3.34803799999861
+      },
+      "state_bracket_ms": {
+        "min": 32.655391000002254,
+        "median": 33.333693999999525,
+        "p95": 33.466536599998875,
+        "max": 34.146577999997874
+      },
+      "control_cycle_ms": {
+        "min": 29.27945600000026,
+        "median": 33.33295799999991,
+        "p95": 34.25403240000051,
+        "max": 37.39129999999946
+      },
+      "command_interval_ms": {
+        "min": 29.27945600000026,
+        "median": 33.332571000001195,
+        "p95": 34.23577000000035,
+        "max": 37.39129999999946
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34799549999978,
+        "p95": 33.34893165000023,
+        "max": 33.3621579999992
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.9488110000018821,
+        "median": -1.303405333333174,
+        "p95": -0.211911266666931,
+        "max": 2.754561333333072
+      }
+    },
+    "startup_action0_lag_ms": 45.688339000000006,
+    "startup_action19_time_from_obs0_ms": 678.4034839999999
+  },
+  {
+    "episode": 32,
+    "frames": 1033,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 48.75619899999961,
+        "median": 75.33919400000144,
+        "p95": 81.45043859999888,
+        "max": 83.80219300000036
+      },
+      "wrist_to_command_ms": {
+        "min": 35.03610200000118,
+        "median": 56.466296000003524,
+        "p95": 68.45567740000043,
+        "max": 70.15220799999966
+      },
+      "ready_to_command_ms": {
+        "min": 1.0412610000010147,
+        "median": 19.710216000000003,
+        "p95": 34.05951679999859,
+        "max": 37.01149699999995
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 6.101146000000002,
+        "median": 13.421553000000586,
+        "p95": 19.367684800000973,
+        "max": 19.798975000000496
+      },
+      "state_bracket_ms": {
+        "min": 32.83410000000053,
+        "median": 33.3331139999995,
+        "p95": 33.44113900000001,
+        "max": 33.83522800000094
+      },
+      "control_cycle_ms": {
+        "min": 31.575104999999937,
+        "median": 33.33610800000031,
+        "p95": 34.26670019999953,
+        "max": 35.017716000000476
+      },
+      "command_interval_ms": {
+        "min": 31.575104999999937,
+        "median": 33.335172500000176,
+        "p95": 34.26780859999949,
+        "max": 35.017716000000476
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347531999999624,
+        "p95": 33.35200659999966,
+        "max": 33.363178000000104
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.799550666666704,
+        "median": -0.18144033333555853,
+        "p95": 0.8319976666680162,
+        "max": 1.3901279999999905
+      }
+    },
+    "startup_action0_lag_ms": 56.233090000000004,
+    "startup_action19_time_from_obs0_ms": 689.705811
+  },
+  {
+    "episode": 33,
+    "frames": 933,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 0,
+    "wrist_repeated_frames": 0,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 52.10131200000134,
+        "median": 59.433534000000066,
+        "p95": 65.97607600000002,
+        "max": 67.47690799999995
+      },
+      "wrist_to_command_ms": {
+        "min": 50.4739040000004,
+        "median": 64.38706599999833,
+        "p95": 76.56869319999996,
+        "max": 78.37908100000001
+      },
+      "ready_to_command_ms": {
+        "min": 16.175983000000116,
+        "median": 20.934119999999723,
+        "p95": 22.671510799999695,
+        "max": 35.41537399999994
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -11.212398000000068,
+        "median": -4.985368999999906,
+        "p95": 0.07763420000088642,
+        "max": 1.6274080000009405
+      },
+      "state_bracket_ms": {
+        "min": 32.68782700000017,
+        "median": 33.33303100000151,
+        "p95": 33.44502699999996,
+        "max": 34.07029799999961
+      },
+      "control_cycle_ms": {
+        "min": 28.896096000000426,
+        "median": 33.33617000000011,
+        "p95": 34.27192800000043,
+        "max": 36.895861999999724
+      },
+      "command_interval_ms": {
+        "min": 28.896096000000426,
+        "median": 33.33615450000016,
+        "p95": 34.27259575000034,
+        "max": 36.895861999999724
+      },
+      "main_capture_interval_ms": {
+        "min": 33.32782600000073,
+        "median": 33.34848200000007,
+        "p95": 33.35363599999983,
+        "max": 33.36095100000058
+      },
+      "nominal_grid_drift_ms": {
+        "min": -1.1493336666665854,
+        "median": -0.09924900000157777,
+        "p95": 0.6405222666664655,
+        "max": 3.5872546666659844
+      }
+    },
+    "startup_action0_lag_ms": 66.941027,
+    "startup_action19_time_from_obs0_ms": 699.5669130000001
+  },
+  {
+    "episode": 34,
+    "frames": 970,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 41.95484899999968,
+        "median": 68.1528019999984,
+        "p95": 75.60532789999988,
+        "max": 76.95060800000064
+      },
+      "wrist_to_command_ms": {
+        "min": 35.086943999999676,
+        "median": 58.84762899999885,
+        "p95": 65.7355906500002,
+        "max": 70.1862000000002
+      },
+      "ready_to_command_ms": {
+        "min": 1.4384699999996364,
+        "median": 20.2716400000007,
+        "p95": 27.14964864999988,
+        "max": 36.75028199999986
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 4.8841879999999005,
+        "median": 10.114893499999944,
+        "p95": 13.652930250001738,
+        "max": 14.338447000000087
+      },
+      "state_bracket_ms": {
+        "min": 32.714007000000045,
+        "median": 33.333580499999016,
+        "p95": 33.44269019999979,
+        "max": 33.870179
+      },
+      "control_cycle_ms": {
+        "min": 29.77150800000139,
+        "median": 33.338641000002056,
+        "p95": 34.3568412999991,
+        "max": 37.30663600000028
+      },
+      "command_interval_ms": {
+        "min": 29.77150800000139,
+        "median": 33.33867300000293,
+        "p95": 34.35710059999906,
+        "max": 37.30663600000028
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.34789399999849,
+        "p95": 33.34968860000025,
+        "max": 33.37178900000026
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.16423266666620862,
+        "median": 0.6978114999991458,
+        "p95": 1.5826757666653535,
+        "max": 4.817641666667427
+      }
+    },
+    "startup_action0_lag_ms": 43.304773000000004,
+    "startup_action19_time_from_obs0_ms": 677.447755
+  },
+  {
+    "episode": 35,
+    "frames": 937,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 35.365446000000134,
+        "median": 62.72240100000204,
+        "p95": 68.35105039999974,
+        "max": 70.7570449999999
+      },
+      "wrist_to_command_ms": {
+        "min": 36.89896199999998,
+        "median": 60.75296299999877,
+        "p95": 69.20989480000009,
+        "max": 72.73857300000009
+      },
+      "ready_to_command_ms": {
+        "min": 1.6395279999998902,
+        "median": 20.05532100000096,
+        "p95": 34.0326745999997,
+        "max": 38.40334299999992
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -2.145009000000142,
+        "median": 2.7490950000021996,
+        "p95": 9.189189799999296,
+        "max": 10.033068999998562
+      },
+      "state_bracket_ms": {
+        "min": 32.24169900000007,
+        "median": 33.3328150000014,
+        "p95": 33.476729600000255,
+        "max": 34.51297600000003
+      },
+      "control_cycle_ms": {
+        "min": 31.642444000000047,
+        "median": 33.33778499999962,
+        "p95": 34.31534200000002,
+        "max": 34.95421400000076
+      },
+      "command_interval_ms": {
+        "min": 31.642444000000047,
+        "median": 33.33768449999886,
+        "p95": 34.31645900000003,
+        "max": 34.95421400000076
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347910500000296,
+        "p95": 33.35164024999937,
+        "max": 33.36426400000114
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.19445366666664965,
+        "median": 0.8694110000009303,
+        "p95": 1.594659533333242,
+        "max": 2.2649413333333257
+      }
+    },
+    "startup_action0_lag_ms": 35.957796,
+    "startup_action19_time_from_obs0_ms": 670.6820449999999
+  },
+  {
+    "episode": 36,
+    "frames": 961,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 2,
+    "wrist_repeated_frames": 2,
+    "cadence_outliers": [
+      {
+        "frame": 948,
+        "cycle_ms": 73.16386999999835,
+        "sequence": 22690,
+        "command_interval_ms": 73.16386999999835
+      },
+      {
+        "frame": 949,
+        "cycle_ms": 0.8495840000009025,
+        "sequence": 22691,
+        "command_interval_ms": 0.8495840000009025
+      }
+    ],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 48.77640399999983,
+        "median": 76.04028100000093,
+        "p95": 82.02717400000026,
+        "max": 110.67412299999901
+      },
+      "wrist_to_command_ms": {
+        "min": 32.05316399999969,
+        "median": 57.00645900000012,
+        "p95": 69.46218499999989,
+        "max": 93.82152299999902
+      },
+      "ready_to_command_ms": {
+        "min": 1.2481720000003804,
+        "median": 20.528778999999275,
+        "p95": 33.15510200000027,
+        "max": 55.178990999998234
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 11.910236000000296,
+        "median": 15.939358999999875,
+        "p95": 19.23275999999774,
+        "max": 19.842135999997623
+      },
+      "state_bracket_ms": {
+        "min": 25.93931299999852,
+        "median": 33.3330080000005,
+        "p95": 33.43282799999869,
+        "max": 40.81498000000039
+      },
+      "control_cycle_ms": {
+        "min": 0.8495840000009025,
+        "median": 33.33016299999869,
+        "p95": 34.220224999999886,
+        "max": 73.16386999999835
+      },
+      "command_interval_ms": {
+        "min": 0.8495840000009025,
+        "median": 33.32958449999879,
+        "p95": 34.2204685499999,
+        "max": 73.16386999999835
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347975499999016,
+        "p95": 33.35123539999785,
+        "max": 33.352897000000326
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.1941869999999568,
+        "median": 0.49928633333351513,
+        "p95": 1.5464986666628988,
+        "max": 39.82420499999506
+      }
+    },
+    "startup_action0_lag_ms": 50.787724000000004,
+    "startup_action19_time_from_obs0_ms": 684.814781
+  },
+  {
+    "episode": 37,
+    "frames": 954,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 0,
+    "wrist_repeated_frames": 0,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 49.18645900000129,
+        "median": 56.72063150000106,
+        "p95": 62.303266000000136,
+        "max": 63.609998000000004
+      },
+      "wrist_to_command_ms": {
+        "min": 49.30565100000095,
+        "median": 60.71430999999983,
+        "p95": 69.21235259999992,
+        "max": 70.41709499999982
+      },
+      "ready_to_command_ms": {
+        "min": 13.278405000001214,
+        "median": 20.432952500000212,
+        "p95": 22.458325750000323,
+        "max": 23.61282899999928
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": -8.104108999999582,
+        "median": -3.988730499999704,
+        "p95": -0.12960369999977106,
+        "max": 0.49175100000198313
+      },
+      "state_bracket_ms": {
+        "min": 32.71998100000006,
+        "median": 33.33288099999976,
+        "p95": 33.43002120000005,
+        "max": 33.948645999999805
+      },
+      "control_cycle_ms": {
+        "min": 31.804546000000045,
+        "median": 33.325207500000346,
+        "p95": 34.15465295000084,
+        "max": 35.14519500000013
+      },
+      "command_interval_ms": {
+        "min": 31.804546000000045,
+        "median": 33.32507499999959,
+        "p95": 34.15500180000066,
+        "max": 35.14519500000013
+      },
+      "main_capture_interval_ms": {
+        "min": 33.34569199999926,
+        "median": 33.347636000000236,
+        "p95": 33.34960319999851,
+        "max": 33.352483
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.06384466666675692,
+        "median": 1.0471084999990055,
+        "p95": 1.659496766666546,
+        "max": 2.3186386666651515
+      }
+    },
+    "startup_action0_lag_ms": 62.576620999999996,
+    "startup_action19_time_from_obs0_ms": 697.249633
+  },
+  {
+    "episode": 38,
+    "frames": 924,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 41.77872600000001,
+        "median": 68.70552800000152,
+        "p95": 74.69011105000016,
+        "max": 76.43513400000002
+      },
+      "wrist_to_command_ms": {
+        "min": 35.760919,
+        "median": 58.448772000000204,
+        "p95": 67.36618009999991,
+        "max": 70.276799
+      },
+      "ready_to_command_ms": {
+        "min": 0.9990689999999913,
+        "median": 20.858721500000676,
+        "p95": 31.513683399999856,
+        "max": 36.39279200000001
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 5.8234109999999975,
+        "median": 10.076305000001007,
+        "p95": 18.25328564999946,
+        "max": 21.508707000002403
+      },
+      "state_bracket_ms": {
+        "min": 31.253727999999814,
+        "median": 33.333098999999144,
+        "p95": 33.44322859999886,
+        "max": 35.42621400000012
+      },
+      "control_cycle_ms": {
+        "min": 31.176065999999558,
+        "median": 33.33013900000059,
+        "p95": 34.324647850000645,
+        "max": 35.4889660000004
+      },
+      "command_interval_ms": {
+        "min": 31.176065999999558,
+        "median": 33.330492000001044,
+        "p95": 34.32492990000071,
+        "max": 35.4889660000004
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.347906999999566,
+        "p95": 33.34893819999998,
+        "max": 33.432192999999444
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.16131199999946944,
+        "median": 0.48731933333412414,
+        "p95": 1.5725177999978963,
+        "max": 2.153813000000504
+      }
+    },
+    "startup_action0_lag_ms": 41.841639,
+    "startup_action19_time_from_obs0_ms": 675.202893
+  },
+  {
+    "episode": 39,
+    "frames": 1020,
+    "checks": {
+      "frame_index_errors": 0,
+      "episode_index_errors": 0,
+      "global_index_errors": 0,
+      "nominal_time_errors": 0,
+      "action_sequence_gaps": 0,
+      "nonmonotonic_commands": 0,
+      "state_image_mismatch": 0,
+      "invalid_state_brackets": 0,
+      "commands_before_image_ready": 0,
+      "nonfinite_state_actions": 0
+    },
+    "main_repeated_frames": 1,
+    "wrist_repeated_frames": 1,
+    "cadence_outliers": [],
+    "timing_stats": {
+      "main_to_command_ms": {
+        "min": 55.866674999999994,
+        "median": 81.89541399999811,
+        "p95": 88.37378315,
+        "max": 90.12553600000001
+      },
+      "wrist_to_command_ms": {
+        "min": 39.572972000000014,
+        "median": 56.84776900000088,
+        "p95": 69.82534260000004,
+        "max": 73.69081399999999
+      },
+      "ready_to_command_ms": {
+        "min": 1.611386999999992,
+        "median": 20.775568500000396,
+        "p95": 27.00411069999994,
+        "max": 36.50846499999999
+      },
+      "signed_wrist_minus_main_ms": {
+        "min": 16.264622,
+        "median": 24.723406999999753,
+        "p95": 27.693894000002928,
+        "max": 28.208146000000767
+      },
+      "state_bracket_ms": {
+        "min": 32.64961600000002,
+        "median": 33.33297050000017,
+        "p95": 33.42285315000044,
+        "max": 34.02387299999998
+      },
+      "control_cycle_ms": {
+        "min": 29.073990999998856,
+        "median": 33.34357299999985,
+        "p95": 34.16804204999968,
+        "max": 37.34426699999993
+      },
+      "command_interval_ms": {
+        "min": 29.073990999998856,
+        "median": 33.34248199999968,
+        "p95": 34.16816909999998,
+        "max": 37.34426699999993
+      },
+      "main_capture_interval_ms": {
+        "min": 0.0,
+        "median": 33.348000000000006,
+        "p95": 33.35175869999887,
+        "max": 33.35982799999471
+      },
+      "nominal_grid_drift_ms": {
+        "min": -0.8290643333346281,
+        "median": 0.3398899999993432,
+        "p95": 1.0692243499999865,
+        "max": 4.757113666666868
+      }
+    },
+    "startup_action0_lag_ms": 55.866674999999994,
+    "startup_action19_time_from_obs0_ms": 689.062212
+  }
+]

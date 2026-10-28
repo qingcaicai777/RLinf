@@ -862,6 +862,43 @@ def test_intervention_masks_only_the_parts_controlled_by_the_operator():
     assert np.array_equal(info["pair_mask"], controlled)
 
 
+def test_flexiv_gripper_worker_does_not_block_arm_deadline():
+    from rlinf.envs.real.flexiv.gripper_command import LatestGripperCommand
+
+    entered = threading.Event()
+    release = threading.Event()
+    completed = threading.Event()
+    widths = []
+    commands = []
+
+    class Gripper:
+        def Move(self, width, velocity, force):
+            widths.append(width)
+            commands.append((width, velocity, force))
+            if len(widths) == 1:
+                entered.set()
+                assert release.wait(2.0)
+            else:
+                completed.set()
+
+    worker = LatestGripperCommand(Gripper(), velocity_m_s=0.03, force_n=25.0)
+    try:
+        worker.submit(0.03)
+        assert entered.wait(2.0)
+        started = time.perf_counter()
+        worker.submit(0.04)
+        worker.submit(0.05)
+        assert time.perf_counter() - started < 0.05
+        release.set()
+        assert completed.wait(2.0)
+    finally:
+        release.set()
+        worker.close()
+        worker.close()
+    assert widths == [0.03, 0.05]
+    assert commands == [(0.03, 0.03, 25.0), (0.05, 0.03, 25.0)]
+
+
 def test_flexiv_world_delta_and_gripper_conventions_match_collector():
     from scipy.spatial.transform import Rotation
 
@@ -917,6 +954,32 @@ def test_flexiv_dummy_env_contract(representation, action_dim):
         env.close()
 
 
+def test_flexiv_cartesian_limits_default_to_rdk_when_not_configured():
+    from rlinf.envs.real.flexiv.base import FlexivEnv, FlexivEnvConfig
+
+    class Robot:
+        def __init__(self):
+            self.calls = []
+
+        def SendCartesianMotionForce(self, *args):
+            self.calls.append(args)
+
+    env = FlexivEnv.__new__(FlexivEnv)
+    env.config = FlexivEnvConfig(is_dummy=True)
+    env._robot = Robot()
+    target = np.zeros(7)
+
+    env._send_cartesian_target(target)
+    assert len(env._robot.calls[0]) == 3
+
+    env.config.max_linear_velocity_m_s = 0.1
+    env.config.max_angular_velocity_rad_s = 0.2
+    env.config.max_linear_acceleration_m_s2 = 0.3
+    env.config.max_angular_acceleration_rad_s2 = 0.4
+    env._send_cartesian_target(target)
+    assert env._robot.calls[1][3:] == (0.1, 0.2, 0.3, 0.4)
+
+
 def test_flexiv_external_intervention_overrides_only_selected_parts():
     from rlinf.envs.real.flexiv.base import FlexivEnv
     from rlinf.envs.real.flexiv.intervention import FlexivInterventionDevice
@@ -954,14 +1017,15 @@ def test_flexiv_external_intervention_overrides_only_selected_parts():
             atol=1e-7,
         )
         assert info["frame_index"] == 0
-        assert info["human_mask"].all() and info["pair_mask"].all()
+        assert np.flatnonzero(info["human_mask"]).tolist() == [0, 1, 6]
+        np.testing.assert_array_equal(info["pair_mask"], info["human_mask"])
         assert info["intervention_source"] == "keyboard"
 
         source.command.gripper = None
         source.command.mode = "residual"
         _, _, _, _, info = env.step(policy)
         np.testing.assert_allclose(info["action_receipt"], [0.01, 0.01, 0, 0, 0, 0, 1])
-        assert info["human_mask"][:6].all()
+        assert np.flatnonzero(info["human_mask"]).tolist() == [0]
         assert not info["human_mask"][6]
 
         source.command.valid_until_ns = 0
@@ -970,6 +1034,86 @@ def test_flexiv_external_intervention_overrides_only_selected_parts():
         assert not info["human_mask"].any()
     finally:
         env.close()
+
+
+def test_flexiv_leader_drag_requires_switch_and_rebases_without_jump(monkeypatch):
+    from rlinf.envs.real.flexiv import (
+        FlexivEnv,
+        FlexivInterventionDevice,
+        LeaderDragConfig,
+        LeaderDragInterventionSource,
+    )
+
+    monkeypatch.setitem(
+        sys.modules,
+        "flexivrdk",
+        SimpleNamespace(Mode=SimpleNamespace(NRT_CARTESIAN_MOTION_FORCE=object())),
+    )
+
+    class Robot:
+        def __init__(self):
+            self.pose = np.array([0.4, 0, 0.2, 1, 0, 0, 0], dtype=np.float64)
+            self.wrench = np.zeros(6)
+            self.stops = 0
+            self.targets = []
+
+        def states(self):
+            return SimpleNamespace(
+                tcp_pose=self.pose.copy(), ext_wrench_in_world=self.wrench.copy()
+            )
+
+        def info(self):
+            return SimpleNamespace(K_x_nom=np.ones(6))
+
+        def SwitchMode(self, mode):
+            self.mode = mode
+
+        def SetForceControlAxis(self, axes):
+            assert axes == [False] * 6
+
+        def SetCartesianImpedance(self, values):
+            assert len(values) == 6
+
+        def SendCartesianMotionForce(self, target, *args):
+            self.targets.append(target)
+
+        def Stop(self):
+            self.stops += 1
+
+    robot = Robot()
+    follower = FlexivEnv({"is_dummy": True, "control_hz": 10000.0})
+    source = LeaderDragInterventionSource(
+        robot, follower.read_tcp_pose, LeaderDragConfig(force_bias_seconds=0.0)
+    )
+    env = TeleopIntervention(follower, FlexivInterventionDevice(source))
+    policy = np.array([0, 0, 0, 0, 0, 0, 1], dtype=np.float32)
+    try:
+        env.reset()
+        _, _, _, _, info = env.step(policy)
+        assert not info["human_mask"].any()
+        assert robot.targets
+
+        source.set_enabled(True)
+        _, _, _, _, info = env.step(policy)
+        np.testing.assert_allclose(info["action_receipt"][:6], 0, atol=1e-7)
+        assert not info["human_mask"].any()
+        assert not info["human_mask"][6]
+
+        robot.pose[0] += 0.01
+        _, _, _, _, info = env.step(policy)
+        np.testing.assert_allclose(info["action_receipt"][0], -0.01, atol=1e-6)
+        assert info["intervention_source"] == "leader_drag"
+
+        source.set_enabled(False)
+        _, _, _, _, info = env.step(policy)
+        assert not info["human_mask"].any()
+
+        source.set_enabled(True)
+        _, _, _, _, info = env.step(policy)
+        np.testing.assert_allclose(info["action_receipt"][:6], 0, atol=1e-7)
+    finally:
+        env.close()
+    assert robot.stops == 1
 
 
 def test_control_is_held_between_samples_then_released():
@@ -4544,3 +4688,99 @@ def test_robotwin_eval_success_seed_order_is_controlled_by_base_seed():
 
     assert selected_seed_0 == selected_seed_0_again
     assert selected_seed_0 != selected_seed_1
+
+
+def test_threaded_leader_poll_does_not_block_follower_control_thread():
+    import threading
+    import time
+
+    from rlinf.envs.real.flexiv.leader_drag import ThreadedLeaderDrag
+
+    entered = threading.Event()
+    release = threading.Event()
+
+    class Source:
+        config = type("Config", (), {"control_hz": 30.0})()
+
+        def __init__(self):
+            self.enabled = []
+            self.closed = False
+
+        def start(self):
+            pass
+
+        def set_enabled(self, enabled):
+            self.enabled.append(enabled)
+
+        def poll(self, now_ns):
+            del now_ns
+            entered.set()
+            release.wait(0.5)
+            return None
+
+        def close(self):
+            self.closed = True
+
+    source = Source()
+    leader = ThreadedLeaderDrag(source)
+    leader.start()
+    try:
+        assert entered.wait(1.0)
+        start = time.perf_counter()
+        leader.set_enabled(True)
+        assert leader.poll(time.perf_counter_ns()) is None
+        assert time.perf_counter() - start < 0.1
+    finally:
+        release.set()
+        leader.close()
+    assert source.closed
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [(-2.0, 0.003), (0.49, 0.003), (0.5, 0.04), (0.51, 0.06), (2.0, 0.06)],
+)
+def test_flexiv_binary_gripper_uses_raw_model_action(raw, expected):
+    from rlinf.envs.real.flexiv.action import binarize_gripper
+
+    assert (
+        binarize_gripper(raw, current_width_m=0.04, closed_m=0.003, open_m=0.06)
+        == expected
+    )
+
+
+@pytest.mark.parametrize("raw", [float("nan"), float("inf"), -float("inf")])
+def test_flexiv_binary_gripper_rejects_nonfinite_action(raw):
+    from rlinf.envs.real.flexiv.action import binarize_gripper
+
+    with pytest.raises(ValueError, match="finite"):
+        binarize_gripper(raw, current_width_m=0.04, closed_m=0.003, open_m=0.06)
+
+
+def test_flexiv_gripper_initialization_serializes_with_moves():
+    from rlinf.envs.real.flexiv.gripper_command import LatestGripperCommand
+
+    entered, release = threading.Event(), threading.Event()
+    events = []
+
+    class Gripper:
+        def Move(self, width, velocity, force):
+            events.append(width)
+            entered.set()
+            assert release.wait(2)
+
+    worker = LatestGripperCommand(Gripper(), velocity_m_s=0.03, force_n=50)
+    try:
+        worker.submit(0.03)
+        assert entered.wait(2)
+        worker.submit(0.04)
+        future = worker.initialize(lambda: events.append("initialize") or 0.06)
+        with pytest.raises(RuntimeError, match="initialization"):
+            worker.submit(0.05)
+        assert not future.done()
+        release.set()
+        assert future.result(timeout=2) == 0.06
+        assert events == [0.03, "initialize"]
+    finally:
+        release.set()
+        worker.close()

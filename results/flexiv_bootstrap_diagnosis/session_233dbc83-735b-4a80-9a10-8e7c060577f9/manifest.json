@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "session": "233dbc83-735b-4a80-9a10-8e7c060577f9",
+  "started_unix_ns": 1791946830733610348,
+  "metadata": {
+    "inference_config": {
+      "action_representation": "joint_absolute",
+      "stage2_config": "examples/embodiment/config/flexiv_joint_stage2.yaml",
+      "checkpoint": "/home/qccc/checkpoints/myq/chkpt_1014_16000/full_weights.pt",
+      "norm_stats": "/home/qccc/checkpoints/myq/connecter_1010/peg_insertion_joint_absolute_1008_v4/norm_stats.json",
+      "training_config": "examples/sft/config/flexiv_joint_stage1_inference.yaml",
+      "backend": "torch",
+      "disable_debug": true,
+      "num_flow_steps": 10,
+      "serve": true,
+      "online_train": true,
+      "episode_dir": "results/flexiv_joint_stage2_ckpt1013_12000/episodes",
+      "checkpoint_dir": "results/flexiv_joint_stage2_ckpt1013_12000/checkpoints",
+      "base_only_episodes": 50,
+      "stage1_only": false,
+      "auto_fine": {
+        "xy_center_mm": [
+          480.0,
+          53.0
+        ],
+        "xy_radius_mm": 15.0,
+        "z_below_mm": 138.0,
+        "consecutive_ticks": 3
+      },
+      "home_dataset_path": "/home/qccc/Flexiv/flexiv_rdk/example_py/myq/peg_insertion_joint_absolute_1008/data",
+      "base_chunk_steps": 22,
+      "base_request_steps": 18,
+      "rtc_guidance_mode": "jacobian",
+      "joint_control": {
+        "max_joint_velocity_rad_s": [
+          0.06,
+          0.06,
+          0.06,
+          0.06,
+          0.06,
+          0.06,
+          0.06
+        ],
+        "max_joint_acceleration_rad_s2": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "fine_motion_limit_scale": 0.2
+      },
+      "gripper_policy": {
+        "binary": false,
+        "threshold": 0.5,
+        "hold_arm_on_close": false
+      }
+    },
+    "myq_config": {
+      "robots": {
+        "left": {
+          "serial_number": "Rizon4-063491",
+          "gripper_name": "Flexiv-GN01",
+          "gripper_open_width_m": 0.06,
+          "gripper_close_width_m": 0.003
+        },
+        "right": {
+          "serial_number": "Rizon4-063473",
+          "gripper_name": "Flexiv-GN01",
+          "gripper_open_width_m": 0.06,
+          "gripper_close_width_m": 0.003
+        }
+      },
+      "control": {
+        "leader": "right",
+        "xy_motion_direction": "opposite",
+        "follower_position_scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "control_hz": 30,
+        "linear_admittance_gain": 0.002,
+        "angular_admittance_gain": 0.008,
+        "force_deadband_n": 1.5,
+        "torque_deadband_nm": 0.15,
+        "leader_impedance_scale": 0.3,
+        "leader_joint_impedance_scale": 0.3,
+        "joint_max_velocity_rad_s": 0.12,
+        "joint_max_acceleration_rad_s2": 0.3,
+        "joint_ik_max_step_rad": 0.2,
+        "joint_ik_max_age_ms": 250.0,
+        "max_linear_velocity_m_s": 0.04,
+        "max_angular_velocity_rad_s": 0.14,
+        "max_linear_acceleration_m_s2": 0.08,
+        "max_angular_acceleration_rad_s2": 0.25,
+        "admittance_velocity_filter_hz": 6.0,
+        "admittance_max_linear_speed_m_s": 0.028,
+        "admittance_max_angular_speed_rad_s": 0.09,
+        "admittance_target_leash_m": 0.006,
+        "admittance_target_leash_deg": 3.0,
+        "admittance_velocity_acceleration_m_s2": 0.12,
+        "admittance_velocity_angular_acceleration_rad_s2": 0.4,
+        "follower_target_filter_hz": 8.0,
+        "follower_orientation_max_deviation_deg": [
+          1.5,
+          1.5,
+          1.5
+        ],
+        "home_return_duration_s": 5.0,
+        "home_settle_timeout_s": 15.0,
+        "home_joint_tolerance_deg": 0.5,
+        "home_left_position_offset_m": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "home_right_position_offset_m": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "intervention": {
+        "synchronization": "rebase_on_takeover",
+        "handback_duration_s": 0.5
+      },
+      "home": {
+        "left_joint_positions_rad": [
+          -0.04654508829116821,
+          0.0248230192810297,
+          0.10866276174783707,
+          2.559631109237671,
+          0.013773158192634583,
+          0.9637578129768372,
+          0.05315325781702995
+        ],
+        "right_joint_positions_rad": [
+          0.3921142816543579,
+          -0.17471957206726074,
+          0.2092672437429428,
+          1.8433676958084106,
+          -0.014040471985936165,
+          0.43593522906303406,
+          -0.9645638465881348
+        ],
+        "right_tcp_pose_wxyz": [
+          0.5080927014350891,
+          0.2105824500322342,
+          0.3135250210762024,
+          -0.0051240017637610435,
+          0.7071208357810974,
+          -0.7070162892341614,
+          -0.009048264473676682
+        ],
+        "recorded_at": "2026-10-08T16:34:10+08:00"
+      },
+      "recording": {
+        "output_dir": "/home/qccc/Flexiv/flexiv_rdk/example_py/myq/peg_insertion_joint_absolute_1008_grasp_xy_same_xy2x",
+        "task": "Pick up the female IEC power connector and plug it into the male connector on the table.",
+        "fps": 30,
+        "max_camera_skew_ms": 33.3,
+        "max_capture_to_command_ms": 100.0,
+        "max_image_ready_to_command_ms": 40.0,
+        "max_robot_state_interpolation_gap_ms": 100.0,
+        "record_arms": "follower",
+        "action_representation": "joint_absolute",
+        "include_force": true,
+        "force_bias_seconds": 1.0,
+        "force_bias_after_home_seconds": 0.5,
+        "jpeg_quality": 95
+      },
+      "gripper_control": {
+        "follower_keyboard": true,
+        "initialize_on_start": true,
+        "initialization_min_wait_s": 2.0,
+        "initialization_timeout_s": 15.0,
+        "open_on_start": true,
+        "open_key": "o",
+        "close_key": "c",
+        "velocity_m_s": 0.03,
+        "force_limit_n": 50.0
+      },
+      "cameras": {
+        "main": {
+          "serial_number": "254122302900",
+          "include_frame_metadata": false,
+          "require_usb3": true,
+          "width": 640,
+          "height": 480,
+          "fps": 30,
+          "crop_width": 320,
+          "crop_height": 320,
+          "crop_offset_x": -20,
+          "crop_offset_y": 90
+        },
+        "wrist": {
+          "serial_number": "250222073667",
+          "include_frame_metadata": false,
+          "require_usb3": true,
+          "width": 640,
+          "height": 480,
+          "fps": 30,
+          "crop_width": 480,
+          "crop_height": 480,
+          "crop_offset_x": 20,
+          "crop_offset_y": 0,
+          "resize_width": 224,
+          "resize_height": 224
+        }
+      }
+    },
+    "backend": "torch",
+    "host": "127.0.0.1",
+    "port": 18765
+  }
+}

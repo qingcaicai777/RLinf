@@ -1,0 +1,42 @@
+[
+  {
+    "frame": 16,
+    "base_mean_joint_error_deg": 0.8242561446338724,
+    "rtc_mean_joint_error_deg": 0.8344186973685925,
+    "rtc_max_joint_error_deg": 3.6411875069121376,
+    "rtc_vs_base_max_deg": 0.07863596081733704,
+    "same_time_handoff_change_deg": 0.42900416254997253,
+    "rtc_raw_max_abs": 1.0574630498886108,
+    "eager_rtc_ms": 1197.24
+  },
+  {
+    "frame": 32,
+    "base_mean_joint_error_deg": 0.6406935339561868,
+    "rtc_mean_joint_error_deg": 0.6966863190826713,
+    "rtc_max_joint_error_deg": 2.800561974812818,
+    "rtc_vs_base_max_deg": 0.33817994594573975,
+    "same_time_handoff_change_deg": 1.5852288007736206,
+    "rtc_raw_max_abs": 0.9767356514930725,
+    "eager_rtc_ms": 503.75
+  },
+  {
+    "frame": 48,
+    "base_mean_joint_error_deg": 0.5677608075875418,
+    "rtc_mean_joint_error_deg": 0.602290680288451,
+    "rtc_max_joint_error_deg": 1.8495400951585828,
+    "rtc_vs_base_max_deg": 0.19974161684513092,
+    "same_time_handoff_change_deg": 1.4545570611953735,
+    "rtc_raw_max_abs": 0.9552153944969177,
+    "eager_rtc_ms": 536.96
+  },
+  {
+    "frame": 64,
+    "base_mean_joint_error_deg": 0.26633699871081695,
+    "rtc_mean_joint_error_deg": 0.2867220780083607,
+    "rtc_max_joint_error_deg": 0.7976205266508034,
+    "rtc_vs_base_max_deg": 0.1401614546775818,
+    "same_time_handoff_change_deg": 1.4667693376541138,
+    "rtc_raw_max_abs": 0.9694526791572571,
+    "eager_rtc_ms": 530.38
+  }
+]

@@ -1,0 +1,146 @@
+{
+  "checkpoint": "/home/qccc/checkpoints/myq/ckpt_1011_20000/full_weights.pt",
+  "norm_stats": "/home/qccc/checkpoints/myq/connecter_1010/peg_insertion_joint_absolute_1008_v4/norm_stats.json",
+  "prompt": "Pick up the black cylindrical peg and insert it into the hole on the dodecahedral fixture",
+  "schedule": "startup action[0:20]; later requests every 16 frames, execute action[4:20] after 4-frame handoff",
+  "observations": "teacher-forced episode-0 dataset observations at each request; no robot dynamics",
+  "tcp_method": "Flexiv Rizon4 URDF FK; tool transform estimated from dataset frame-0 joint_state/eef_state",
+  "20k": {
+    "tcp_xyz_mae_mm": [
+      1.9269141727110222,
+      1.9913669050588811,
+      4.009535877873576
+    ],
+    "tcp_distance_mae_mm": 5.4659135711129405,
+    "tcp_distance_p95_mm": 11.577875923062688,
+    "startup_first20_tcp_distance_mae_mm": 4.5293016932302805,
+    "startup_first20_z_mae_mm": 4.122920219911716,
+    "frame0_z_error_per_seed_mm": [
+      2.2241914775897875,
+      2.7754639735426414,
+      2.6924033731309525
+    ],
+    "frame19_z_error_per_seed_mm": [
+      7.93098828170613,
+      7.21217267160093,
+      7.103691116780968
+    ]
+  },
+  "10k": {
+    "tcp_xyz_mae_mm": [
+      1.9757324279345525,
+      2.157912975517204,
+      3.9523906645783797
+    ],
+    "tcp_distance_mae_mm": 5.535976087531843,
+    "tcp_distance_p95_mm": 11.350333161976273,
+    "startup_first20_tcp_distance_mae_mm": 3.3273758516527416,
+    "startup_first20_z_mae_mm": 2.7174848763281787,
+    "frame0_z_error_per_seed_mm": [
+      0.9757982675973331,
+      1.789349391489281,
+      1.2952059397279836
+    ],
+    "frame19_z_error_per_seed_mm": [
+      6.401888497365226,
+      5.571830093096002,
+      5.171054638473643
+    ]
+  },
+  "joint_mae_deg": {
+    "20k": 0.3189643919467926,
+    "10k": 0.3257063329219818
+  },
+  "frame_points": {
+    "0": {
+      "model_z_delta_mean_mm": 2.703229179697638,
+      "dataset_z_delta_mm": 0.13920957160984404,
+      "z_error_mean_mm": 2.564019608087794,
+      "tcp_error_norm_mean_mm": 3.0655428792098793
+    },
+    "1": {
+      "model_z_delta_mean_mm": 2.9586971400724633,
+      "dataset_z_delta_mm": 0.13955977009053044,
+      "z_error_mean_mm": 2.819137369981933,
+      "tcp_error_norm_mean_mm": 3.345822863161551
+    },
+    "4": {
+      "model_z_delta_mean_mm": 2.736491306248155,
+      "dataset_z_delta_mm": -0.03280925816470659,
+      "z_error_mean_mm": 2.769300564412861,
+      "tcp_error_norm_mean_mm": 3.2360914424036307
+    },
+    "8": {
+      "model_z_delta_mean_mm": 2.25662176173666,
+      "dataset_z_delta_mm": -0.8466466792269034,
+      "z_error_mean_mm": 3.103268440963564,
+      "tcp_error_norm_mean_mm": 3.477039003627445
+    },
+    "12": {
+      "model_z_delta_mean_mm": 2.0239814939960836,
+      "dataset_z_delta_mm": -2.414664383447146,
+      "z_error_mean_mm": 4.438645877443229,
+      "tcp_error_norm_mean_mm": 4.697686663195659
+    },
+    "16": {
+      "model_z_delta_mean_mm": 1.1747604267646021,
+      "dataset_z_delta_mm": -4.732669997769751,
+      "z_error_mean_mm": 5.907430424534353,
+      "tcp_error_norm_mean_mm": 6.315798836706094
+    },
+    "19": {
+      "model_z_delta_mean_mm": 0.7250118321546947,
+      "dataset_z_delta_mm": -6.690605524541315,
+      "z_error_mean_mm": 7.41561735669601,
+      "tcp_error_norm_mean_mm": 7.8803565759800165
+    },
+    "20": {
+      "model_z_delta_mean_mm": -3.889211053188355,
+      "dataset_z_delta_mm": -7.373003640780917,
+      "z_error_mean_mm": 3.483792587592562,
+      "tcp_error_norm_mean_mm": 5.4903900385787905
+    },
+    "35": {
+      "model_z_delta_mean_mm": -8.775684239870083,
+      "dataset_z_delta_mm": -17.880680692067607,
+      "z_error_mean_mm": 9.104996452197524,
+      "tcp_error_norm_mean_mm": 12.5136000458335
+    },
+    "36": {
+      "model_z_delta_mean_mm": -15.751553410362867,
+      "dataset_z_delta_mm": -18.578717426370297,
+      "z_error_mean_mm": 2.8271640160074303,
+      "tcp_error_norm_mean_mm": 4.109187658704699
+    },
+    "51": {
+      "model_z_delta_mean_mm": -23.52842597835385,
+      "dataset_z_delta_mm": -29.47649719889034,
+      "z_error_mean_mm": 5.9480712205364865,
+      "tcp_error_norm_mean_mm": 7.142470957908171
+    },
+    "100": {
+      "model_z_delta_mean_mm": -51.09727662785136,
+      "dataset_z_delta_mm": -52.97401719990316,
+      "z_error_mean_mm": 1.876740572051806,
+      "tcp_error_norm_mean_mm": 3.78562358886828
+    },
+    "200": {
+      "model_z_delta_mean_mm": -84.88184772738414,
+      "dataset_z_delta_mm": -80.10377710034678,
+      "z_error_mean_mm": -4.77807062703738,
+      "tcp_error_norm_mean_mm": 5.221443585253636
+    },
+    "500": {
+      "model_z_delta_mean_mm": -86.81358692455075,
+      "dataset_z_delta_mm": -86.05464911649038,
+      "z_error_mean_mm": -0.7589378080603618,
+      "tcp_error_norm_mean_mm": 3.813024478923429
+    },
+    "987": {
+      "model_z_delta_mean_mm": -51.924247276331336,
+      "dataset_z_delta_mm": -47.507872585277475,
+      "z_error_mean_mm": -4.41637469105387,
+      "tcp_error_norm_mean_mm": 4.691851475101934
+    }
+  }
+}

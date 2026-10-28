@@ -1,0 +1,642 @@
+[
+  {
+    "episode": "episode_000000",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 4.95523795416416,
+    "demonstrated_target_displacement_mm": 9.540292211255261,
+    "projection_along_demonstrated_direction_mm": 4.258631011167451,
+    "direction_cosine": 0.8594200824581368
+  },
+  {
+    "episode": "episode_000000",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 10.944653066080386,
+    "demonstrated_target_displacement_mm": 20.610630943899,
+    "projection_along_demonstrated_direction_mm": 10.862831096301932,
+    "direction_cosine": 0.9925240234400817
+  },
+  {
+    "episode": "episode_000001",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 3.862619052108097,
+    "demonstrated_target_displacement_mm": 1.8836962111269273,
+    "projection_along_demonstrated_direction_mm": 3.0000785449624683,
+    "direction_cosine": 0.7766954246562624
+  },
+  {
+    "episode": "episode_000001",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 7.858553312923573,
+    "demonstrated_target_displacement_mm": 10.88056959454922,
+    "projection_along_demonstrated_direction_mm": 7.277850612531201,
+    "direction_cosine": 0.9261056485501735
+  },
+  {
+    "episode": "episode_000002",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 1.7941662256274375,
+    "demonstrated_target_displacement_mm": 5.825186442918097,
+    "projection_along_demonstrated_direction_mm": 1.6612639732699357,
+    "direction_cosine": 0.9259253404399447
+  },
+  {
+    "episode": "episode_000002",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 7.455884934016414,
+    "demonstrated_target_displacement_mm": 15.710193251065832,
+    "projection_along_demonstrated_direction_mm": 7.2640777326158705,
+    "direction_cosine": 0.9742743882050204
+  },
+  {
+    "episode": "episode_000003",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 5.871340364770722,
+    "demonstrated_target_displacement_mm": 1.4267142651964249,
+    "projection_along_demonstrated_direction_mm": 2.105321357834374,
+    "direction_cosine": 0.3585759344606804
+  },
+  {
+    "episode": "episode_000003",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 11.233146861419312,
+    "demonstrated_target_displacement_mm": 9.032785808423482,
+    "projection_along_demonstrated_direction_mm": 9.100730780747988,
+    "direction_cosine": 0.8101675241160435
+  },
+  {
+    "episode": "episode_000004",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 3.8835373756908806,
+    "demonstrated_target_displacement_mm": 2.9496234760342714,
+    "projection_along_demonstrated_direction_mm": 2.7215700415922717,
+    "direction_cosine": 0.7007966650786013
+  },
+  {
+    "episode": "episode_000004",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 8.669172722616102,
+    "demonstrated_target_displacement_mm": 12.910401872914518,
+    "projection_along_demonstrated_direction_mm": 7.239783643174087,
+    "direction_cosine": 0.8351181681138927
+  },
+  {
+    "episode": "episode_000005",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 3.5086083141085243,
+    "demonstrated_target_displacement_mm": 4.318021253910324,
+    "projection_along_demonstrated_direction_mm": 2.971448349705821,
+    "direction_cosine": 0.8469022711247876
+  },
+  {
+    "episode": "episode_000005",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 9.36460218457139,
+    "demonstrated_target_displacement_mm": 14.54963835091205,
+    "projection_along_demonstrated_direction_mm": 8.741259424173835,
+    "direction_cosine": 0.9334362797146321
+  },
+  {
+    "episode": "episode_000006",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 3.3278627959850047,
+    "demonstrated_target_displacement_mm": 8.583325215405129,
+    "projection_along_demonstrated_direction_mm": 2.6238779269234604,
+    "direction_cosine": 0.7884573637137665
+  },
+  {
+    "episode": "episode_000006",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 8.948711490978432,
+    "demonstrated_target_displacement_mm": 19.769305178839755,
+    "projection_along_demonstrated_direction_mm": 8.705307797617468,
+    "direction_cosine": 0.9728001407122859
+  },
+  {
+    "episode": "episode_000007",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 4.2383457787189505,
+    "demonstrated_target_displacement_mm": 1.6387835017414933,
+    "projection_along_demonstrated_direction_mm": 3.470144944638668,
+    "direction_cosine": 0.8187498438807245
+  },
+  {
+    "episode": "episode_000007",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 9.813832220029072,
+    "demonstrated_target_displacement_mm": 9.366008634539039,
+    "projection_along_demonstrated_direction_mm": 9.658423901851297,
+    "direction_cosine": 0.984164359580083
+  },
+  {
+    "episode": "episode_000008",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 4.504511461977355,
+    "demonstrated_target_displacement_mm": 3.7675800260489827,
+    "projection_along_demonstrated_direction_mm": 4.269429645046721,
+    "direction_cosine": 0.9478119172489706
+  },
+  {
+    "episode": "episode_000008",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 9.576348989309041,
+    "demonstrated_target_displacement_mm": 11.550929914578145,
+    "projection_along_demonstrated_direction_mm": 8.54848866197504,
+    "direction_cosine": 0.8926667847546601
+  },
+  {
+    "episode": "episode_000009",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 4.4295074083629125,
+    "demonstrated_target_displacement_mm": 2.5230788735533407,
+    "projection_along_demonstrated_direction_mm": 3.7869610267247857,
+    "direction_cosine": 0.8549395401337406
+  },
+  {
+    "episode": "episode_000009",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 11.055828626788577,
+    "demonstrated_target_displacement_mm": 11.247381593401448,
+    "projection_along_demonstrated_direction_mm": 10.53276228715256,
+    "direction_cosine": 0.952688635353065
+  },
+  {
+    "episode": "episode_000010",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 4.484439564369387,
+    "demonstrated_target_displacement_mm": 0.20910652635620747,
+    "projection_along_demonstrated_direction_mm": -3.7169282507343264,
+    "direction_cosine": -0.8288501154674408
+  },
+  {
+    "episode": "episode_000010",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 9.164952588217167,
+    "demonstrated_target_displacement_mm": 2.5047720538443867,
+    "projection_along_demonstrated_direction_mm": 7.116777996589006,
+    "direction_cosine": 0.7765209833969706
+  },
+  {
+    "episode": "episode_000011",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 18.599263520051885,
+    "demonstrated_target_displacement_mm": 11.67450603567847,
+    "projection_along_demonstrated_direction_mm": 18.012594532657726,
+    "direction_cosine": 0.9684574076408096
+  },
+  {
+    "episode": "episode_000011",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 27.224917516779726,
+    "demonstrated_target_displacement_mm": 20.628415599013678,
+    "projection_along_demonstrated_direction_mm": 27.12122621729728,
+    "direction_cosine": 0.9961913089573721
+  },
+  {
+    "episode": "episode_000012",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 2.9212748886282327,
+    "demonstrated_target_displacement_mm": 0.8071608354983824,
+    "projection_along_demonstrated_direction_mm": -1.16715082896202,
+    "direction_cosine": -0.39953474885415136
+  },
+  {
+    "episode": "episode_000012",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 9.694140224823045,
+    "demonstrated_target_displacement_mm": 5.623625454467779,
+    "projection_along_demonstrated_direction_mm": 6.8320334028714145,
+    "direction_cosine": 0.7047590858420996
+  },
+  {
+    "episode": "episode_000013",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 2.8011445316105985,
+    "demonstrated_target_displacement_mm": 0.9317897981754459,
+    "projection_along_demonstrated_direction_mm": 2.14066830001145,
+    "direction_cosine": 0.7642120125735216
+  },
+  {
+    "episode": "episode_000013",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 10.461695384991904,
+    "demonstrated_target_displacement_mm": 9.14748891861085,
+    "projection_along_demonstrated_direction_mm": 10.075431099490785,
+    "direction_cosine": 0.9630782324196473
+  },
+  {
+    "episode": "episode_000014",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 1.8766393816579774,
+    "demonstrated_target_displacement_mm": 2.4438908417563394,
+    "projection_along_demonstrated_direction_mm": -0.7470880921035923,
+    "direction_cosine": -0.39809890989474667
+  },
+  {
+    "episode": "episode_000014",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 6.843921441147419,
+    "demonstrated_target_displacement_mm": 11.824771845727842,
+    "projection_along_demonstrated_direction_mm": 3.044282833568355,
+    "direction_cosine": 0.44481557243853537
+  },
+  {
+    "episode": "episode_000015",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 1.8169846636456524,
+    "demonstrated_target_displacement_mm": 4.44212661680864,
+    "projection_along_demonstrated_direction_mm": 1.5950239560943673,
+    "direction_cosine": 0.877841177202929
+  },
+  {
+    "episode": "episode_000015",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 7.169854766080612,
+    "demonstrated_target_displacement_mm": 12.693355856403064,
+    "projection_along_demonstrated_direction_mm": 7.102016907240433,
+    "direction_cosine": 0.9905384612306084
+  },
+  {
+    "episode": "episode_000016",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 3.6413730115902516,
+    "demonstrated_target_displacement_mm": 3.4905635833576545,
+    "projection_along_demonstrated_direction_mm": 3.210451474802437,
+    "direction_cosine": 0.8816596005363309
+  },
+  {
+    "episode": "episode_000016",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 10.441218281387867,
+    "demonstrated_target_displacement_mm": 10.00653642394114,
+    "projection_along_demonstrated_direction_mm": 10.17057635329219,
+    "direction_cosine": 0.9740794684296455
+  },
+  {
+    "episode": "episode_000017",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 2.8308363653627073,
+    "demonstrated_target_displacement_mm": 2.055196812616107,
+    "projection_along_demonstrated_direction_mm": 1.6378553093670003,
+    "direction_cosine": 0.5785764692750605
+  },
+  {
+    "episode": "episode_000017",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 6.4731536560615694,
+    "demonstrated_target_displacement_mm": 8.381925749213886,
+    "projection_along_demonstrated_direction_mm": 6.190978489609279,
+    "direction_cosine": 0.9564083935829243
+  },
+  {
+    "episode": "episode_000018",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 2.7992274028252053,
+    "demonstrated_target_displacement_mm": 2.0387650849558154,
+    "projection_along_demonstrated_direction_mm": 2.1089773883030163,
+    "direction_cosine": 0.7534140978237305
+  },
+  {
+    "episode": "episode_000018",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 9.550489791713343,
+    "demonstrated_target_displacement_mm": 7.366206661900479,
+    "projection_along_demonstrated_direction_mm": 7.945730710996303,
+    "direction_cosine": 0.8319710176425257
+  },
+  {
+    "episode": "episode_000019",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 9.818029077102581,
+    "demonstrated_target_displacement_mm": 2.9216890977864294,
+    "projection_along_demonstrated_direction_mm": 9.430257801700542,
+    "direction_cosine": 0.9605041630701224
+  },
+  {
+    "episode": "episode_000019",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 17.2556904360968,
+    "demonstrated_target_displacement_mm": 12.797041945221194,
+    "projection_along_demonstrated_direction_mm": 16.871009593599368,
+    "direction_cosine": 0.9777070153221614
+  },
+  {
+    "episode": "episode_000020",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 1.939661350255241,
+    "demonstrated_target_displacement_mm": 1.1418763873858198,
+    "projection_along_demonstrated_direction_mm": -0.3174023804184354,
+    "direction_cosine": -0.16363803938077554
+  },
+  {
+    "episode": "episode_000020",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 7.624166041446651,
+    "demonstrated_target_displacement_mm": 7.199775562710842,
+    "projection_along_demonstrated_direction_mm": 4.655758398843701,
+    "direction_cosine": 0.610658054078829
+  },
+  {
+    "episode": "episode_000021",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 5.520665419733186,
+    "demonstrated_target_displacement_mm": 1.1650105316550343,
+    "projection_along_demonstrated_direction_mm": 3.0799235099733377,
+    "direction_cosine": 0.5578899056197814
+  },
+  {
+    "episode": "episode_000021",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 13.13971191259332,
+    "demonstrated_target_displacement_mm": 7.245957070582107,
+    "projection_along_demonstrated_direction_mm": 12.839346338902242,
+    "direction_cosine": 0.9771406271546027
+  },
+  {
+    "episode": "episode_000022",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 5.4146002650768805,
+    "demonstrated_target_displacement_mm": 3.4927930089486234,
+    "projection_along_demonstrated_direction_mm": 5.0773723392007035,
+    "direction_cosine": 0.9377187771272366
+  },
+  {
+    "episode": "episode_000022",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 12.287205974566358,
+    "demonstrated_target_displacement_mm": 12.516186042619514,
+    "projection_along_demonstrated_direction_mm": 11.899984325114001,
+    "direction_cosine": 0.9684857851122639
+  },
+  {
+    "episode": "episode_000023",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 5.092436051765506,
+    "demonstrated_target_displacement_mm": 1.795635739825783,
+    "projection_along_demonstrated_direction_mm": 1.7450784160710213,
+    "direction_cosine": 0.34268047714924516
+  },
+  {
+    "episode": "episode_000023",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 7.169848100605486,
+    "demonstrated_target_displacement_mm": 10.153276706569052,
+    "projection_along_demonstrated_direction_mm": 5.63778534702226,
+    "direction_cosine": 0.786318659463114
+  },
+  {
+    "episode": "episode_000024",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 3.5921439820018306,
+    "demonstrated_target_displacement_mm": 4.392603426419366,
+    "projection_along_demonstrated_direction_mm": 2.7878930851936152,
+    "direction_cosine": 0.7761083907443982
+  },
+  {
+    "episode": "episode_000024",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 9.472921127316457,
+    "demonstrated_target_displacement_mm": 14.98747382222908,
+    "projection_along_demonstrated_direction_mm": 8.427238313381094,
+    "direction_cosine": 0.8896134782627932
+  },
+  {
+    "episode": "episode_000025",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 7.632367304189583,
+    "demonstrated_target_displacement_mm": 3.6952721485549427,
+    "projection_along_demonstrated_direction_mm": 4.755328065902275,
+    "direction_cosine": 0.6230475914454439
+  },
+  {
+    "episode": "episode_000025",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 14.356944737261207,
+    "demonstrated_target_displacement_mm": 9.915164388519996,
+    "projection_along_demonstrated_direction_mm": 11.355342362800819,
+    "direction_cosine": 0.7909302829124781
+  },
+  {
+    "episode": "episode_000026",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 5.098778709820401,
+    "demonstrated_target_displacement_mm": 7.269656948731563,
+    "projection_along_demonstrated_direction_mm": 4.26331708308547,
+    "direction_cosine": 0.8361447565618394
+  },
+  {
+    "episode": "episode_000026",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 12.708232442463512,
+    "demonstrated_target_displacement_mm": 17.89251850888736,
+    "projection_along_demonstrated_direction_mm": 11.385248079765933,
+    "direction_cosine": 0.8958954859625533
+  },
+  {
+    "episode": "episode_000027",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 5.621374261846908,
+    "demonstrated_target_displacement_mm": 9.563473113070186,
+    "projection_along_demonstrated_direction_mm": 3.868101846181491,
+    "direction_cosine": 0.6881060868753865
+  },
+  {
+    "episode": "episode_000027",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 12.235388661216993,
+    "demonstrated_target_displacement_mm": 20.541039228578203,
+    "projection_along_demonstrated_direction_mm": 10.211216976370975,
+    "direction_cosine": 0.8345641694846919
+  },
+  {
+    "episode": "episode_000028",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 3.9005210669806876,
+    "demonstrated_target_displacement_mm": 3.455525472560663,
+    "projection_along_demonstrated_direction_mm": -0.8738254091261356,
+    "direction_cosine": -0.2240278655391408
+  },
+  {
+    "episode": "episode_000028",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 9.529922568246802,
+    "demonstrated_target_displacement_mm": 12.509370195320821,
+    "projection_along_demonstrated_direction_mm": 5.247223149860963,
+    "direction_cosine": 0.5506050140789636
+  },
+  {
+    "episode": "episode_000029",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 2.3367494148004364,
+    "demonstrated_target_displacement_mm": 1.2838321337081466,
+    "projection_along_demonstrated_direction_mm": 1.7667534022294789,
+    "direction_cosine": 0.7560731120929214
+  },
+  {
+    "episode": "episode_000029",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 8.226221270884919,
+    "demonstrated_target_displacement_mm": 6.3225230754002,
+    "projection_along_demonstrated_direction_mm": 7.604759976679641,
+    "direction_cosine": 0.9244536131790161
+  },
+  {
+    "episode": "episode_000030",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 5.462382062457463,
+    "demonstrated_target_displacement_mm": 8.053548927245213,
+    "projection_along_demonstrated_direction_mm": 4.744330183115122,
+    "direction_cosine": 0.8685460168966471
+  },
+  {
+    "episode": "episode_000030",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 12.794874976989567,
+    "demonstrated_target_displacement_mm": 18.54370556640761,
+    "projection_along_demonstrated_direction_mm": 12.16134827999351,
+    "direction_cosine": 0.9504859017274184
+  },
+  {
+    "episode": "episode_000031",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 3.8516471202849325,
+    "demonstrated_target_displacement_mm": 0.2121593761061599,
+    "projection_along_demonstrated_direction_mm": 3.083975379906135,
+    "direction_cosine": 0.8006900122454605
+  },
+  {
+    "episode": "episode_000031",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 8.805721700358394,
+    "demonstrated_target_displacement_mm": 1.3615412019357795,
+    "projection_along_demonstrated_direction_mm": 7.66683453853333,
+    "direction_cosine": 0.8706650970154199
+  },
+  {
+    "episode": "episode_000032",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 6.208904511384479,
+    "demonstrated_target_displacement_mm": 1.7073661855209163,
+    "projection_along_demonstrated_direction_mm": 2.059295553410262,
+    "direction_cosine": 0.3316680985565801
+  },
+  {
+    "episode": "episode_000032",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 9.828288730701924,
+    "demonstrated_target_displacement_mm": 11.044700214514332,
+    "projection_along_demonstrated_direction_mm": 8.734092582839805,
+    "direction_cosine": 0.8886687013534682
+  },
+  {
+    "episode": "episode_000033",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 2.9885504567698233,
+    "demonstrated_target_displacement_mm": 0.8639858325822471,
+    "projection_along_demonstrated_direction_mm": 2.9858277138013656,
+    "direction_cosine": 0.9990889419443161
+  },
+  {
+    "episode": "episode_000033",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 8.895168175414936,
+    "demonstrated_target_displacement_mm": 7.9084585079538146,
+    "projection_along_demonstrated_direction_mm": 8.8715699395159,
+    "direction_cosine": 0.9973470725416684
+  },
+  {
+    "episode": "episode_000034",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 3.066926724932616,
+    "demonstrated_target_displacement_mm": 1.83312262362649,
+    "projection_along_demonstrated_direction_mm": 2.14314225047547,
+    "direction_cosine": 0.6987914752096194
+  },
+  {
+    "episode": "episode_000034",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 8.561800232980607,
+    "demonstrated_target_displacement_mm": 8.494435663005827,
+    "projection_along_demonstrated_direction_mm": 6.587191635450045,
+    "direction_cosine": 0.769369928776866
+  },
+  {
+    "episode": "episode_000035",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 8.667606606899243,
+    "demonstrated_target_displacement_mm": 13.06149593766637,
+    "projection_along_demonstrated_direction_mm": 6.429323330886589,
+    "direction_cosine": 0.7417645519085945
+  },
+  {
+    "episode": "episode_000035",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 15.464045665773995,
+    "demonstrated_target_displacement_mm": 24.29202660206319,
+    "projection_along_demonstrated_direction_mm": 14.384325931543293,
+    "direction_cosine": 0.9301787024193542
+  },
+  {
+    "episode": "episode_000036",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 10.646979413355215,
+    "demonstrated_target_displacement_mm": 13.572596771706598,
+    "projection_along_demonstrated_direction_mm": 8.873644185040316,
+    "direction_cosine": 0.8334424103337246
+  },
+  {
+    "episode": "episode_000036",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 16.534241152798522,
+    "demonstrated_target_displacement_mm": 24.727865912522663,
+    "projection_along_demonstrated_direction_mm": 14.352471983018626,
+    "direction_cosine": 0.8680454004742384
+  },
+  {
+    "episode": "episode_000037",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 7.527126547384248,
+    "demonstrated_target_displacement_mm": 1.922345941559811,
+    "projection_along_demonstrated_direction_mm": 5.739235058884266,
+    "direction_cosine": 0.7624735711237255
+  },
+  {
+    "episode": "episode_000037",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 12.524869413647119,
+    "demonstrated_target_displacement_mm": 7.252369987089314,
+    "projection_along_demonstrated_direction_mm": 10.948396385276963,
+    "direction_cosine": 0.8741325776496776
+  },
+  {
+    "episode": "episode_000038",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 2.2270592270520657,
+    "demonstrated_target_displacement_mm": 4.979466072963563,
+    "projection_along_demonstrated_direction_mm": 0.4678981186165981,
+    "direction_cosine": 0.21009684562181574
+  },
+  {
+    "episode": "episode_000038",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 8.004915313373232,
+    "demonstrated_target_displacement_mm": 15.480834946902055,
+    "projection_along_demonstrated_direction_mm": 7.122436364200913,
+    "direction_cosine": 0.889757865683098
+  },
+  {
+    "episode": "episode_000039",
+    "prediction_index": 19,
+    "predicted_displacement_mm": 9.713949151057278,
+    "demonstrated_target_displacement_mm": 7.361980325841968,
+    "projection_along_demonstrated_direction_mm": 9.200011531321518,
+    "direction_cosine": 0.9470928237585203
+  },
+  {
+    "episode": "episode_000039",
+    "prediction_index": 31,
+    "predicted_displacement_mm": 14.894754903345769,
+    "demonstrated_target_displacement_mm": 15.117268071482407,
+    "projection_along_demonstrated_direction_mm": 14.336757141819772,
+    "direction_cosine": 0.9625372981867156
+  }
+]

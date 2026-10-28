@@ -1,0 +1,41 @@
+# Torch Stage2 learner contract: absolute radians for seven joints, width in metres.
+online_residual:
+  enabled: true
+  action_representation: "joint_absolute"
+  proprio_normalization: stage1
+  proprio_dim: 8
+  z_dim: 2048
+  inference_horizon: 6
+  actor_horizon: 12
+  td_horizon: 12
+  hidden_dim: 512
+  num_hidden_layers: 3
+  residual_scale: 0.05
+  gamma: 0.99
+  rank_margin: 0.05
+  rank_weight: 50.0
+  actor_margin: 0.0
+  actor_kappa: 0.05
+  relative_q_weight: 1.0
+  ordinary_bc_weight: 5.0
+  human_bc_multiplier: 5.0
+  smooth_weight: 0.0
+  # eta_1, eta_2, eta_3: first-, second- and third-order non-gripper differences.
+  smooth_weights: [1.0, 1.0, 1.0]
+  rollout_noise_std: 0.04
+  target_noise_std: 0.04
+  target_noise_clip: 0.10
+  target_tau: 0.005
+  critic_updates_per_transition: 5
+  critic_updates_per_actor_update: 5
+  learner_device: cpu
+  learner_cpu_threads: 1
+  actor_lr: 1.0e-4
+  critic_lr: 3.0e-4
+  max_grad_norm: 1.0
+  replay_capacity: 200000
+  recent_sample_window: 10000
+  critic_warmup_updates: 100
+  actor_publish_interval: 10
+  checkpoint_interval: 250
+

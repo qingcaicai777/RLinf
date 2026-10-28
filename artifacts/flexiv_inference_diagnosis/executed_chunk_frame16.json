@@ -1,0 +1,82 @@
+{
+  "episode": 0,
+  "request_frame": 16,
+  "planned_handoff_frame": 20,
+  "request_prediction_indices_executed": [
+    4,
+    23
+  ],
+  "dataset_action_frames": [
+    20,
+    39
+  ],
+  "prompt": "Pick up the black cylindrical peg and insert it into the hole on the dodecahedral fixture",
+  "rtc_guidance_mode": "jacobian",
+  "rtc_delay_steps": 4,
+  "rtc_committed_raw_indices": [
+    16,
+    31
+  ],
+  "seeds": 5,
+  "alignment": "The robot accepts the returned coarse actions at frame 20. Its 20 executed actions are original prediction indices 4..23 and are compared with dataset action frames 20..39.",
+  "metrics": {
+    "jacobian_rtc": {
+      "joint_mae_deg": [
+        0.2578299641609192,
+        1.4872654676437378,
+        0.2156011164188385,
+        0.15901771187782288,
+        0.4116060733795166,
+        1.8574745655059814,
+        0.29106107354164124
+      ],
+      "joint_rmse_deg": [
+        0.3069840967655182,
+        1.6116080284118652,
+        0.2332085520029068,
+        0.19123795628547668,
+        0.45036882162094116,
+        1.9530680179595947,
+        0.3487093150615692
+      ],
+      "gripper_mae_mm": 1.3531857402995229,
+      "chunk_mae_deg": 0.6685508489608765,
+      "per_seed_chunk_mae_deg": [
+        0.7053318619728088,
+        0.6324635148048401,
+        0.7450903058052063,
+        0.6942826509475708,
+        0.5655859708786011
+      ]
+    },
+    "no_rtc": {
+      "joint_mae_deg": [
+        0.291510671377182,
+        1.7092924118041992,
+        0.2448064088821411,
+        0.23303943872451782,
+        0.4225386381149292,
+        1.9445167779922485,
+        0.29542386531829834
+      ],
+      "joint_rmse_deg": [
+        0.3323424756526947,
+        1.801157832145691,
+        0.2609151005744934,
+        0.26548513770103455,
+        0.4597122073173523,
+        2.031634569168091,
+        0.3578645884990692
+      ],
+      "gripper_mae_mm": 1.410829252563417,
+      "chunk_mae_deg": 0.7344468235969543,
+      "per_seed_chunk_mae_deg": [
+        0.7816226482391357,
+        0.7098545432090759,
+        0.8274816870689392,
+        0.7351212501525879,
+        0.6181541085243225
+      ]
+    }
+  }
+}

@@ -1,11 +1,11 @@
 # Copyright 2026 The RLinf Authors.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Compute OpenPI statistics for compact single-arm Flexiv demonstrations.
+"""Compute fixed OpenPI statistics from compact single-arm Flexiv commands.
 
-The script applies the same current-pose-relative TCP-control-frame delta
-conversion and terminal action-chunk padding as the Flexiv SFT dataset adapter.
-It reads only numeric Parquet columns and never rewrites the source recordings.
+TCP targets use the SFT loader's current-pose delta conversion. Joint targets
+retain absolute radians and gripper width. Both use episode-local future chunks
+and terminal padding; only numeric Parquet columns are read.
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ import numpy as np
 from rlinf.data.datasets.openpi_rlinf.flexiv.flexiv_sft_dataset import (
     absolute_tcp_chunk_to_control_delta,
     future_action_indices,
+    validate_flexiv_metadata,
 )
 
 DEFAULT_DATASET = Path("/home/qccc/Flexiv/flexiv_rdk/example_py/myq/peg_insertion_ok")
@@ -31,15 +32,14 @@ def read_metadata(dataset: Path) -> dict:
         metadata = json.load(stream)
     if len(metadata.get("recorded_arm_names", [])) != 1:
         raise ValueError("Statistics require a single recorded arm.")
-    expected = {
-        "observation.eef_state": [6],
-        "observation.joint_state": [7],
-        "observation.gripper_state": [1],
-        "action": [7],
-    }
-    for key, shape in expected.items():
-        if metadata.get("features", {}).get(key, {}).get("shape") != shape:
-            raise ValueError(f"{key} must have shape {shape}.")
+    representation = metadata.get("action_representation")
+    if representation not in {"eef_absolute", "joint_absolute"}:
+        raise ValueError("Statistics require absolute TCP or absolute joint commands.")
+    validate_flexiv_metadata(
+        metadata,
+        "joint_absolute" if representation == "joint_absolute" else "eef_delta",
+        require_images=False,
+    )
     return metadata
 
 
@@ -50,7 +50,7 @@ def iter_numeric_batches(
     action_horizon: int = 32,
     model_action_dim: int = 32,
 ) -> Iterator[dict[str, np.ndarray]]:
-    """Yield 8D states and transformed 7D action chunks for every frame.
+    """Yield 8D states and padded TCP-delta or absolute-joint action chunks.
 
     Gripper values remain in the dataset's physical width units for both state
     and action. Statistical normalization must not silently change that coding.
@@ -59,14 +59,11 @@ def iter_numeric_batches(
 
     if batch_size <= 0:
         raise ValueError("batch_size must be positive.")
-    if model_action_dim < 7:
-        raise ValueError("model_action_dim must be at least the physical 7D action.")
     metadata = read_metadata(dataset)
-    if metadata.get("action_representation") != "eef_absolute":
-        raise ValueError(
-            "Flexiv statistics expect absolute TCP source targets so the same "
-            "training-time delta conversion can be applied."
-        )
+    joint = metadata["action_representation"] == "joint_absolute"
+    physical_dim = 8 if joint else 7
+    if model_action_dim < physical_dim:
+        raise ValueError("model_action_dim is smaller than the physical action width.")
     paths = sorted((dataset / "data").rglob("*.parquet"))
     if not paths:
         raise FileNotFoundError(f"No Parquet episodes found under {dataset / 'data'}.")
@@ -81,7 +78,7 @@ def iter_numeric_batches(
         values = {
             key: np.asarray(table[key].to_pylist(), dtype=np.float64) for key in columns
         }
-        for key, width in zip(columns, (6, 7, 1, 7), strict=True):
+        for key, width in zip(columns, (6, 7, 1, physical_dim), strict=True):
             if (
                 values[key].shape != (table.num_rows, width)
                 or not np.isfinite(values[key]).all()
@@ -94,11 +91,15 @@ def iter_numeric_batches(
             stop = min(start + batch_size, table.num_rows)
             actions = values["action"][chunk_indices[start:stop]]
             measured_tcp = values["observation.eef_state"][start:stop, None, :]
-            delta_actions = absolute_tcp_chunk_to_control_delta(measured_tcp, actions)
+            delta_actions = (
+                actions
+                if joint
+                else absolute_tcp_chunk_to_control_delta(measured_tcp, actions)
+            )
             padded_actions = np.zeros(
                 (stop - start, action_horizon, model_action_dim), dtype=np.float64
             )
-            padded_actions[..., :7] = delta_actions
+            padded_actions[..., :physical_dim] = delta_actions
             yield {
                 "state": np.concatenate(
                     (
@@ -175,7 +176,9 @@ def main() -> None:
                 {
                     "dataset": str(args.dataset),
                     "state_dim": 8,
-                    "action_dim": 7,
+                    "action_dim": 8
+                    if metadata["action_representation"] == "joint_absolute"
+                    else 7,
                     "action_representation": metadata["action_representation"],
                     "frames": metadata["total_frames"],
                     "episodes": metadata["total_episodes"],

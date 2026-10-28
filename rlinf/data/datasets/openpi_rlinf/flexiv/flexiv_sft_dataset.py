@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Dataset adapter for compact single-arm Flexiv demonstrations.
+"""Load compact single-arm Flexiv demonstrations for OpenPI SFT.
 
-The recordings retain commanded absolute TCP targets. This adapter constructs
-the future action chunk and converts every target to a delta in the recording's
-TCP control frame from the current measured TCP immediately before the OpenPI
-input transforms run.
-The source dataset is never rewritten.
+Absolute TCP recordings become deltas from the current measured TCP. Absolute
+joint recordings retain commanded joint targets and gripper width unchanged.
+Both modes construct episode-local future chunks before OpenPI transforms.
 """
 
 from __future__ import annotations
@@ -65,9 +63,7 @@ def absolute_tcp_chunk_to_control_delta(
             f"absolute_actions must end in dimension 7, got {targets.shape}."
         )
     try:
-        reference = np.broadcast_to(
-            reference, targets.shape[:-1] + (6,)
-        ).copy()
+        reference = np.broadcast_to(reference, targets.shape[:-1] + (6,)).copy()
     except ValueError as exc:
         raise ValueError(
             "measured_tcp leading dimensions must broadcast to the action chunk."
@@ -80,8 +76,10 @@ def absolute_tcp_chunk_to_control_delta(
     reference_rotation = Rotation.from_rotvec(reference[..., 3:6].reshape(-1, 3))
     target_rotation = Rotation.from_rotvec(targets[..., 3:6].reshape(-1, 3))
     result[..., 3:6] = (
-        target_rotation * reference_rotation.inv()
-    ).as_rotvec().reshape(targets.shape[:-1] + (3,))
+        (target_rotation * reference_rotation.inv())
+        .as_rotvec()
+        .reshape(targets.shape[:-1] + (3,))
+    )
     return result
 
 
@@ -117,6 +115,36 @@ def _decode_rgb(encoded: bytes) -> np.ndarray:
         return np.asarray(image.convert("RGB"), dtype=np.uint8)
 
 
+def validate_flexiv_metadata(
+    metadata: dict[str, Any],
+    action_representation: str = "eef_delta",
+    *,
+    require_images: bool = True,
+) -> None:
+    """Validate the physical recording contract before transforms or statistics."""
+    expected = {
+        "observation.eef_state": [6],
+        "observation.joint_state": [7],
+        "observation.gripper_state": [1],
+        "action": [8 if action_representation == "joint_absolute" else 7],
+    }
+    features = metadata.get("features", {})
+    for key, shape in expected.items():
+        if features.get(key, {}).get("shape") != shape:
+            raise ValueError(f"Flexiv SFT {key} must have shape {shape}.")
+    source = (
+        "joint_absolute"
+        if action_representation == "joint_absolute"
+        else "eef_absolute"
+    )
+    if metadata.get("action_representation") != source:
+        raise ValueError(f"Flexiv SFT expects source action_representation={source!r}.")
+    image_keys = set(metadata.get("image_keys", []))
+    required_images = {"observation.image", "observation.wrist_image"}
+    if require_images and not required_images.issubset(image_keys):
+        raise ValueError("Flexiv SFT requires main and wrist RGB observations.")
+
+
 class FlexivSftDataset(torch.utils.data.Dataset):
     """Expose compact Flexiv frames in the canonical OpenPI SFT schema."""
 
@@ -126,6 +154,7 @@ class FlexivSftDataset(torch.utils.data.Dataset):
         data_path: str,
         action_horizon: int,
         cache_dir: str | None = None,
+        action_representation: str = "eef_delta",
     ) -> None:
         from datasets import load_dataset
 
@@ -135,13 +164,18 @@ class FlexivSftDataset(torch.utils.data.Dataset):
             raise FileNotFoundError(f"Flexiv metadata not found at {info_path}.")
         with info_path.open(encoding="utf-8") as stream:
             metadata = json.load(stream)
-        self._validate_metadata(metadata)
+        if action_representation not in {"eef_delta", "joint_absolute"}:
+            raise ValueError("Unsupported Flexiv training action representation.")
+        self._action_representation = action_representation
+        validate_flexiv_metadata(metadata, action_representation)
 
         episode_rows = _read_json_lines(root / "meta" / "episodes.jsonl")
         episode_rows.sort(key=lambda row: int(row["episode_index"]))
         lengths = [int(row["length"]) for row in episode_rows]
         if any(length <= 0 for length in lengths):
-            raise ValueError("Every Flexiv SFT episode must contain at least one frame.")
+            raise ValueError(
+                "Every Flexiv SFT episode must contain at least one frame."
+            )
         self._episode_ends = np.cumsum(lengths, dtype=np.int64).tolist()
         self._episode_starts = [0, *self._episode_ends[:-1]]
 
@@ -168,28 +202,6 @@ class FlexivSftDataset(torch.utils.data.Dataset):
         if self._action_horizon <= 0:
             raise ValueError("action_horizon must be positive.")
 
-    @staticmethod
-    def _validate_metadata(metadata: dict[str, Any]) -> None:
-        expected = {
-            "observation.eef_state": [6],
-            "observation.joint_state": [7],
-            "observation.gripper_state": [1],
-            "action": [7],
-        }
-        features = metadata.get("features", {})
-        for key, shape in expected.items():
-            if features.get(key, {}).get("shape") != shape:
-                raise ValueError(f"Flexiv SFT {key} must have shape {shape}.")
-        if metadata.get("action_representation") != "eef_absolute":
-            raise ValueError(
-                "Flexiv SFT expects source action_representation='eef_absolute'; "
-                "delta conversion is performed online by the dataset adapter."
-            )
-        image_keys = set(metadata.get("image_keys", []))
-        required_images = {"observation.image", "observation.wrist_image"}
-        if not required_images.issubset(image_keys):
-            raise ValueError("Flexiv SFT requires main and wrist RGB observations.")
-
     @property
     def dataset_root(self) -> Path:
         """Return the source dataset root."""
@@ -213,13 +225,30 @@ class FlexivSftDataset(torch.utils.data.Dataset):
 
         measured_tcp = np.asarray(row["observation.eef_state"], dtype=np.float64)
         absolute_actions = np.asarray(future_rows["action"], dtype=np.float64)
-        actions = absolute_tcp_chunk_to_control_delta(measured_tcp, absolute_actions)
+        actions = (
+            absolute_actions.copy()
+            if self._action_representation == "joint_absolute"
+            else absolute_tcp_chunk_to_control_delta(measured_tcp, absolute_actions)
+        )
+        if (
+            actions.shape
+            != (
+                self._action_horizon,
+                8 if self._action_representation == "joint_absolute" else 7,
+            )
+            or not np.isfinite(actions).all()
+        ):
+            raise ValueError(
+                "Flexiv action chunk has invalid shape or non-finite commands."
+            )
         state = np.concatenate(
             (
                 np.asarray(row["observation.joint_state"], dtype=np.float32),
                 np.asarray(row["observation.gripper_state"], dtype=np.float32),
             )
         )
+        if state.shape != (8,) or not np.isfinite(state).all():
+            raise ValueError("Flexiv proprio must contain eight finite values.")
         task_index = int(row["task_index"])
         if task_index not in self._tasks:
             raise KeyError(f"No prompt found for Flexiv task_index={task_index}.")

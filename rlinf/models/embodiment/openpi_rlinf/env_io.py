@@ -118,7 +118,9 @@ class EnvIO:
         """Normalize physical dataset actions for Stage-2 residual learning."""
         stats = self._action_norm_stats
         if stats is None:
-            raise ValueError("The OpenPI checkpoint has no action normalization statistics.")
+            raise ValueError(
+                "The OpenPI checkpoint has no action normalization statistics."
+            )
         source = actions.detach().to(torch.float32)
         width = source.shape[-1]
 
@@ -136,6 +138,31 @@ class EnvIO:
             return (source - low) / (high - low + 1e-6) * 2.0 - 1.0
         mean, std = as_tensor(stats.mean), as_tensor(stats.std)
         return (source - mean) / (std + 1e-6)
+
+    def denormalize_rlt_actions(self, actions: torch.Tensor) -> torch.Tensor:
+        """Decode normalized dataset actions using the frozen Stage1 statistics."""
+        stats = self._action_norm_stats
+        if stats is None:
+            raise ValueError(
+                "The OpenPI checkpoint has no action normalization statistics."
+            )
+        source = actions.detach().to(torch.float32)
+        width = source.shape[-1]
+
+        def as_tensor(value):
+            return torch.as_tensor(
+                value[..., :width], device=source.device, dtype=source.dtype
+            )
+
+        if self._action_use_quantiles:
+            q01 = getattr(stats, "q01", None)
+            q99 = getattr(stats, "q99", None)
+            if q01 is None or q99 is None:
+                raise ValueError("Quantile action statistics require q01 and q99.")
+            low, high = as_tensor(q01), as_tensor(q99)
+            return (source + 1.0) * (high - low + 1e-6) / 2.0 + low
+        mean, std = as_tensor(stats.mean), as_tensor(stats.std)
+        return source * (std + 1e-6) + mean
 
     def decode_rlt_actions(
         self, normalized_actions: torch.Tensor, state: torch.Tensor

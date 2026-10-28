@@ -172,9 +172,13 @@ def direct_delta_smoothness_loss(
     smooth_dims: int = 6,
     weights: tuple[float, float, float] = (1.0, 1.0, 1.0),
 ) -> torch.Tensor:
-    """Penalize first through third differences of commanded non-gripper deltas."""
+    """Average squared joint-vector differences over valid times per sample.
+
+    Each order excludes differences touching invalid frames, then averages
+    samples with at least one valid difference. The committed prefix is frozen.
+    """
     values = torch.cat((committed.detach(), actor_execution), dim=1)[..., :smooth_dims]
-    mask = valid_mask[..., :smooth_dims]
+    mask = valid_mask[..., :smooth_dims].bool().all(dim=-1)
     total = values.new_zeros(())
     current = values
     current_mask = mask
@@ -183,7 +187,10 @@ def direct_delta_smoothness_loss(
         current_mask = current_mask[:, 1:] & current_mask[:, :-1]
         if current.shape[1] == 0:
             break
-        total = total + float(weight) * _masked_mean(current.square(), current_mask)
+        squared_norm = current.square().sum(dim=-1)
+        counts = current_mask.sum(dim=-1)
+        per_sample = (squared_norm * current_mask).sum(dim=-1) / counts.clamp_min(1)
+        total = total + float(weight) * _masked_mean(per_sample, counts > 0)
     return total
 
 
@@ -202,6 +209,7 @@ def actor_loss(
     relative_q_eligible: torch.Tensor,
     config: OnlineResidualRLConfig,
     projected_execution: torch.Tensor | None = None,
+    smooth_valid_mask: torch.Tensor | None = None,
 ) -> ActorLoss:
     """Combine pessimistic relative Q, disjoint BC terms, and optional smoothing."""
     relative = relative_q_loss(
@@ -226,8 +234,9 @@ def actor_loss(
         smooth = direct_delta_smoothness_loss(
             committed,
             projected_execution,
-            valid_mask=valid_mask,
+            valid_mask=valid_mask if smooth_valid_mask is None else smooth_valid_mask,
             smooth_dims=config.action_representation.smooth_dims,
+            weights=config.smooth_weights,
         )
     total = (
         config.relative_q_weight * relative

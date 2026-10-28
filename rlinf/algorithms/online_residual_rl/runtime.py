@@ -69,6 +69,7 @@ class OnlineResidualController:
         deterministic: bool,
         committed: torch.Tensor | None = None,
         prefix_mask: torch.Tensor | None = None,
+        use_actor: bool = True,
     ) -> ResidualDecision:
         """Predict independently; optionally construct a full Critic candidate."""
         if base_reference.ndim != 3:
@@ -92,14 +93,18 @@ class OnlineResidualController:
                     "Committed queue must contain finite normalized commands."
                 )
         noise = None
-        if not deterministic and self.config.rollout_noise_std > 0.0:
+        if use_actor and not deterministic and self.config.rollout_noise_std > 0.0:
             noise = torch.randn_like(base_reference) * self.config.rollout_noise_std
             noise[:, : self.config.inference_horizon] = 0
-        actor_output = self.actor(
-            z,
-            proprio,
-            base_reference,
-            pre_tanh_noise=noise,
+        actor_output = (
+            self.actor(
+                z,
+                proprio,
+                base_reference,
+                pre_tanh_noise=noise,
+            )
+            if use_actor
+            else base_reference
         )
         proposal = (
             None if committed is None else self.actor.candidate(committed, actor_output)

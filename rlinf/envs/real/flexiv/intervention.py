@@ -1,12 +1,12 @@
 # Copyright 2026 The RLinf Authors.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Adapt myq's time-limited intervention commands to Flexiv env actions."""
+"""Adapt local time-limited intervention commands to Flexiv env actions."""
 
 from __future__ import annotations
 
 import time
-from typing import Any, Literal
+from typing import Literal
 
 import gymnasium as gym
 import numpy as np
@@ -14,10 +14,11 @@ import numpy as np
 from rlinf.envs.real.wrappers.teleop.intervention import TeleopDevice, TeleopSample
 
 from .action import normalize_gripper
+from .intervention_command import InterventionSource
 
 
 class FlexivInterventionDevice(TeleopDevice):
-    """Read a ``myq.intervention.InterventionSource`` for one Flexiv arm.
+    """Read a local ``InterventionSource`` for one Flexiv arm.
 
     The source is structural: it only needs ``poll(now_ns)`` returning the
     external ``InterventionCommand`` shape. Commands are physical TCP deltas;
@@ -31,10 +32,11 @@ class FlexivInterventionDevice(TeleopDevice):
 
     def __init__(
         self,
-        source: Any,
+        source: InterventionSource,
         *,
         arm: str = "follower",
         gripper_unit: Literal["width_m", "normalized"] = "width_m",
+        clip_to_action_space: bool = True,
     ) -> None:
         if arm not in {"leader", "follower"}:
             raise ValueError("arm must be 'leader' or 'follower'.")
@@ -43,10 +45,11 @@ class FlexivInterventionDevice(TeleopDevice):
         self.source = source
         self.arm = arm
         self.gripper_unit = gripper_unit
+        self.clip_to_action_space = bool(clip_to_action_space)
 
     def read(self, env: gym.Env, policy_action: np.ndarray) -> TeleopSample:
         """Return the accepted physical override and its controlled dimensions."""
-        # Match the clock used by myq.drag_runtime for valid_until_ns.
+        # Match the leader drag source's command-lifetime clock.
         now_ns = time.perf_counter_ns()
         command = self.source.poll(now_ns)
         if command is None:
@@ -103,11 +106,15 @@ class FlexivInterventionDevice(TeleopDevice):
             action[6] = gripper_value
             controlled[6] = True
 
-        # FlexivEnv.step rejects out-of-space commands before its own controller
-        # limits. Bound the accepted command here, then log its final receipt.
+        # The Gym step path requires action-space bounds. Realtime deployment
+        # may disable TCP delta clipping while retaining the gripper range.
         if not isinstance(env.action_space, gym.spaces.Box):
             raise TypeError("Flexiv intervention requires a Box action space.")
-        action = np.clip(action, env.action_space.low, env.action_space.high)
+        if self.clip_to_action_space:
+            action = np.clip(action, env.action_space.low, env.action_space.high)
+        else:
+            action[6] = np.clip(action[6], 0.0, 1.0)
+        controlled &= np.abs(action - np.asarray(policy_action)) > 1e-6
         return TeleopSample(
             action=action.astype(np.float32),
             active=True,
@@ -118,3 +125,15 @@ class FlexivInterventionDevice(TeleopDevice):
                 "intervention_timestamp_ns": int(command.timestamp_ns),
             },
         )
+
+    def reset(self, env: gym.Env) -> None:
+        """Activate the locally owned drag source after the follower resets."""
+        start = getattr(self.source, "start", None)
+        if callable(start):
+            start()
+
+    def close(self) -> None:
+        """Stop a source that owns a leader robot connection."""
+        close = getattr(self.source, "close", None)
+        if callable(close):
+            close()

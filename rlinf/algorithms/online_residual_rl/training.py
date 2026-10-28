@@ -12,6 +12,7 @@ from typing import Callable
 
 import torch
 
+from .config import OnlineResidualRLConfig
 from .learner import OnlineResidualLearner
 from .replay import EpisodeReplay
 from .update_budget import UpdateBudget
@@ -56,16 +57,26 @@ class OnlineTraining:
         self.publish_interval, self.publish = publish_interval, publish
         self.episodes = 0
         self.actor_updates = 0
+        self.critic_updates = 0
 
-    def commit_episode(self, rows, *, success: bool, terminal_frame: int) -> int:
+    def commit_episode(
+        self, rows, *, success: bool, terminal_frame: int, persist: bool = True
+    ) -> int:
         """Credit each newly admitted transition exactly once."""
         count = self.replay.commit_episode(
-            rows, success=success, terminal_frame=terminal_frame
+            rows, success=success, terminal_frame=terminal_frame, persist=persist
         )
         if count:
             self.episodes += 1
             self.budget.add_transitions(count)
         return count
+
+    @property
+    def rollout_mode(self) -> str:
+        """Select base-only collection until replay and Critic warmup finish."""
+        if self.episodes < self.initial_episodes or self.warmup_remaining:
+            return "base"
+        return "rollout"
 
     def step(self) -> dict[str, float]:
         """Perform at most one Critic update and its due Actor update."""
@@ -77,6 +88,7 @@ class OnlineTraining:
             self.replay.sample(self.td_batch_size),
             corrections=self.replay.sample(self.supervision_batch_size, kind="rank"),
         ).values
+        self.critic_updates += 1
         if self.warmup_remaining:
             self.warmup_remaining -= 1
             self.budget.critic_since_actor = 0
@@ -100,13 +112,9 @@ class OnlineTraining:
                 self.publish(self.actor_updates, snapshot)
         return metrics
 
-    def save(self, destination: str | Path) -> None:
-        """Atomically save networks, optimizers, replay, credit and RNG states."""
-        import tempfile
-
-        destination = Path(destination)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        state = {
+    def checkpoint_state(self) -> dict:
+        """Return all state required to resume in another learner process."""
+        return {
             "config": asdict(self.learner.config),
             "learner": self.learner.state_dict(),
             "actor_optimizer": self.learner.actor_optimizer.state_dict(),
@@ -115,6 +123,7 @@ class OnlineTraining:
             "budget": asdict(self.budget),
             "episodes": self.episodes,
             "actor_updates": self.actor_updates,
+            "critic_updates": self.critic_updates,
             "warmup_remaining": self.warmup_remaining,
             "settings": {
                 name: getattr(self, name)
@@ -130,6 +139,14 @@ class OnlineTraining:
             if torch.cuda.is_available()
             else None,
         }
+
+    def save(self, destination: str | Path) -> None:
+        """Atomically save networks, optimizers, replay, credit and RNG states."""
+        import tempfile
+
+        destination = Path(destination)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        state = self.checkpoint_state()
         with tempfile.NamedTemporaryFile(
             dir=destination.parent, delete=False
         ) as temporary:
@@ -143,8 +160,20 @@ class OnlineTraining:
     def load(self, source: str | Path) -> None:
         """Resume a trusted local training checkpoint with matching model contract."""
         state = torch.load(source, map_location="cpu", weights_only=False)
-        if state["config"] != asdict(self.learner.config):
+        self.load_state(state)
+
+    def load_state(self, state: dict) -> None:
+        """Restore a trusted checkpoint with the same model and action mapping."""
+        if OnlineResidualRLConfig(**state["config"]) != self.learner.config:
             raise ValueError("Checkpoint model contract does not match this learner.")
+        projector = self.learner.action_projector
+        if isinstance(projector, torch.nn.Module):
+            for name, value in projector.state_dict().items():
+                saved = state["learner"].get(f"action_projector.{name}")
+                if saved is None or not torch.equal(saved, value.cpu()):
+                    raise ValueError(
+                        "Checkpoint action normalization or projection differs from this learner."
+                    )
         self.learner.load_state_dict(state["learner"], strict=True)
         self.learner.actor_optimizer.load_state_dict(state["actor_optimizer"])
         self.learner.critic_optimizer.load_state_dict(state["critic_optimizer"])
@@ -152,6 +181,7 @@ class OnlineTraining:
         self.budget = UpdateBudget(**state["budget"])
         self.episodes, self.actor_updates = state["episodes"], state["actor_updates"]
         self.warmup_remaining = state["warmup_remaining"]
+        self.critic_updates = state.get("critic_updates", 0)
         for name, value in state["settings"].items():
             setattr(self, name, value)
         torch.set_rng_state(state["rng"])

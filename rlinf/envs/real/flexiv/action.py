@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
 import numpy as np
@@ -51,3 +52,30 @@ def denormalize_gripper(value: float, *, closed_m: float, open_m: float) -> floa
     """Map a normalized gripper action to GN01 opening width in metres."""
     normalized = float(np.clip(value, 0.0, 1.0))
     return closed_m + normalized * (open_m - closed_m)
+
+
+def binarize_gripper(
+    normalized_action: float,
+    *,
+    current_width_m: float,
+    closed_m: float,
+    open_m: float,
+    threshold: float = 0.5,
+) -> float:
+    """Select physical closed/open width from a pre-unnormalization action.
+
+    Values below the threshold close, values above it open, and equality
+    retains the current command target. The action is not rescaled to [0,1].
+    """
+    if not all(
+        math.isfinite(value)
+        for value in (normalized_action, current_width_m, closed_m, open_m, threshold)
+    ):
+        raise ValueError("Binary gripper action, widths and threshold must be finite.")
+    if open_m <= closed_m:
+        raise ValueError("gripper_open_width_m must exceed gripper_close_width_m.")
+    if normalized_action < threshold:
+        return float(closed_m)
+    if normalized_action > threshold:
+        return float(open_m)
+    return float(current_width_m)

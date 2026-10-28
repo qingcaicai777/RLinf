@@ -68,9 +68,11 @@ class OnlineResidualTransition:
     discounted_return: torch.Tensor
     terminal: bool
     valid_len: int
+    proposal_trace: torch.Tensor | None = None
     correction: SparseCorrection | None = None
     schedule_valid: bool = True
     receipts_valid: bool = True
+    executed_physical: torch.Tensor | None = None
 
     @property
     def relative_q_eligible(self) -> bool:
@@ -98,18 +100,12 @@ class TransitionAssembler:
 
     def begin(self, feature: FeatureRecord, policy_proposal: torch.Tensor) -> None:
         """Register an immutable request snapshot at its inference boundary."""
+        _validate_feature(feature, self.config)
         if feature.obs_id in self._pending:
             raise ValueError(f"Decision {feature.obs_id!r} is already pending.")
         expected = (self.config.actor_horizon, self.config.action_dim)
         if tuple(policy_proposal.shape) != expected:
             raise ValueError(f"policy_proposal must have shape {expected}.")
-        if not torch.allclose(
-            policy_proposal[: self.config.inference_horizon],
-            feature.committed,
-            rtol=0.0,
-            atol=1.0e-5,
-        ):
-            raise ValueError("Policy proposal must retain the real committed prefix.")
         self._pending[feature.obs_id] = _PendingDecision(
             feature=replace(
                 feature,
@@ -136,6 +132,8 @@ class TransitionAssembler:
         next_feature: FeatureRecord | None,
         human_mask: torch.Tensor | None = None,
         pair_mask: torch.Tensor | None = None,
+        proposal_trace: torch.Tensor | None = None,
+        executed_physical: torch.Tensor | None = None,
         schedule_valid: bool = True,
         receipts_valid: bool = True,
         label_confirmed: bool = True,
@@ -153,13 +151,25 @@ class TransitionAssembler:
                 human_mask if human_mask is not None else pair_mask, dtype=torch.bool
             ).clone()
             pair_mask = torch.as_tensor(
-                pair_mask if pair_mask is not None else human_mask, dtype=torch.bool
+                pair_mask if pair_mask is not None else torch.zeros_like(human_mask),
+                dtype=torch.bool,
             ).clone()
             human_mask[valid_len:] = False
             pair_mask[: self.config.inference_horizon] = False
             pair_mask[valid_len:] = False
+        if proposal_trace is not None:
+            proposal_trace = torch.as_tensor(proposal_trace).clone()
+            if proposal_trace.shape != executed.shape:
+                proposal_trace = None
+                if pair_mask is not None:
+                    pair_mask[:] = False
+            else:
+                finite = torch.isfinite(proposal_trace)
+                if pair_mask is not None:
+                    pair_mask &= finite
+                proposal_trace = torch.where(finite, proposal_trace, executed)
         correction = self._build_correction(
-            pending.policy_proposal,
+            pending.policy_proposal if proposal_trace is None else proposal_trace,
             executed,
             human_mask=human_mask,
             pair_mask=pair_mask,
@@ -178,9 +188,15 @@ class TransitionAssembler:
             discounted_return=value.detach().clone(),
             terminal=bool(terminal),
             valid_len=int(valid_len),
+            proposal_trace=(
+                None if proposal_trace is None else proposal_trace.detach().clone()
+            ),
             correction=correction,
             schedule_valid=bool(schedule_valid),
             receipts_valid=bool(receipts_valid),
+            executed_physical=None
+            if executed_physical is None
+            else executed_physical.detach().clone(),
         )
         validate_transition(transition, self.config)
         del self._pending[obs_id]
@@ -226,32 +242,46 @@ class TransitionAssembler:
                 raise ValueError(
                     "Receipt frame indices must be consecutive from the decision."
                 )
+            if not bool(info.get("schedule_valid", True)):
+                raise ValueError("Scheduling-invalid receipt window.")
             if not bool(info.get("receipt_valid", True)):
                 raise ValueError(
                     "A missing or unknown final command receipt is invalid."
                 )
-            receipt = torch.as_tensor(
-                info.get("action_receipt_physical", info["action_receipt"]),
-                dtype=torch.float32,
+            if (
+                info.get(
+                    "action_representation", self.config.action_representation.value
+                )
+                != self.config.action_representation.value
+            ):
+                raise ValueError(
+                    "Receipt action representation differs from transition contract."
+                )
+            value = (
+                info["action_receipt_physical"]
+                if "action_receipt_physical" in info
+                else info["action_receipt"]
             )
+            receipt = torch.as_tensor(value, dtype=torch.float32)
             if (
                 receipt.shape != (self.config.action_dim,)
                 or not torch.isfinite(receipt).all()
             ):
                 raise ValueError("Final action receipt has invalid shape or values.")
             physical.append(receipt)
-            if "intervene_action" in info and "human_mask" not in info:
-                raise ValueError("Intervention receipts require a human_mask.")
             for name, target in (("human_mask", human), ("pair_mask", pair)):
-                mask = info.get(name, info.get("human_mask", None))
+                mask = info.get(name)
                 if mask is None:
                     continue
-                mask = torch.as_tensor(mask, dtype=torch.bool)
+                try:
+                    mask = torch.as_tensor(mask, dtype=torch.bool)
+                except (ValueError, TypeError, RuntimeError):
+                    continue
                 if mask.shape != (self.config.action_dim,):
-                    raise ValueError(
-                        f"{name} must have shape ({self.config.action_dim},)."
-                    )
+                    continue
                 target[offset] = mask
+            if info.get("policy_proposal_valid") is False:
+                pair[offset] = False
 
         normalized = (
             torch.as_tensor(encode_actions(torch.stack(physical)), dtype=torch.float32)
@@ -260,10 +290,62 @@ class TransitionAssembler:
         )
         if normalized.shape != (valid_len, self.config.action_dim):
             raise ValueError("Encoded receipts must retain [valid_len, action_dim].")
+        # Unknown or corrupt preference entries remove rank supervision only.
+        # Final receipts and human BC remain usable.
+        safe_proposals = []
+        any_proposal = False
+        for offset, info in enumerate(step_infos):
+            value = info.get("policy_proposal_physical")
+            trustworthy = bool(info.get("policy_proposal_valid", value is not None))
+            try:
+                candidate = (
+                    torch.as_tensor(value, dtype=torch.float32)
+                    if value is not None
+                    else physical[offset]
+                )
+            except (ValueError, TypeError, RuntimeError):
+                candidate = physical[offset]
+                trustworthy = False
+            if candidate.shape != (self.config.action_dim,):
+                candidate = physical[offset]
+                trustworthy = False
+            finite = torch.isfinite(candidate)
+            pair[offset] &= finite & bool(trustworthy)
+            # Only actual human changes can supervise rank/BC when comparison is known.
+            if trustworthy:
+                changed = (candidate - physical[offset]).abs() > 1e-6
+                human[offset] &= changed | ~finite
+            safe_proposals.append(torch.where(finite, candidate, physical[offset]))
+            any_proposal |= bool(trustworthy)
+        pair &= human
+        proposal_trace = None
+        if any_proposal:
+            proposal_normalized = (
+                torch.as_tensor(
+                    encode_actions(torch.stack(safe_proposals)), dtype=torch.float32
+                )
+                .detach()
+                .cpu()
+            )
+            if proposal_normalized.shape != (valid_len, self.config.action_dim):
+                pair[:] = False
+            else:
+                finite = torch.isfinite(proposal_normalized)
+                pair[:valid_len] &= finite
+                proposal_trace = torch.zeros(
+                    self.config.td_horizon, self.config.action_dim
+                )
+                proposal_trace[:valid_len] = torch.where(
+                    finite, proposal_normalized, normalized
+                )
+        else:
+            pair[:] = False
         executed = torch.zeros(
             self.config.td_horizon, self.config.action_dim, dtype=torch.float32
         )
         executed[:valid_len] = normalized
+        executed_physical = torch.zeros_like(executed)
+        executed_physical[:valid_len] = torch.stack(physical)
         return self.complete(
             obs_id,
             executed=executed,
@@ -273,6 +355,8 @@ class TransitionAssembler:
             next_feature=next_feature,
             human_mask=human,
             pair_mask=pair,
+            proposal_trace=proposal_trace,
+            executed_physical=executed_physical,
             label_confirmed=label_confirmed,
         )
 
@@ -290,15 +374,15 @@ class TransitionAssembler:
         if human_mask is None:
             human_mask = pair_mask
         if pair_mask is None:
-            pair_mask = human_mask
+            pair_mask = torch.zeros_like(human_mask)
         human_mask = torch.as_tensor(human_mask, dtype=torch.bool)
         pair_mask = torch.as_tensor(pair_mask, dtype=torch.bool)
         if tuple(human_mask.shape) != shape or tuple(pair_mask.shape) != shape:
             raise ValueError(f"Correction masks must have shape {shape}.")
         # A comparison is trustworthy only where an executed value was also
-        # marked as a human intervention. This implements the requested default
-        # while allowing callers to remove uncertain preference entries.
-        pair_mask = pair_mask & human_mask
+        # marked as a human correction with a finite, changed proposal.
+        pair_mask = pair_mask & human_mask & torch.isfinite(proposal)
+        pair_mask &= (proposal.to(executed.device) - executed).abs() > 1e-6
         values = proposal.to(device=pair_mask.device)[pair_mask]
         return SparseCorrection(human_mask, pair_mask, values.detach().clone())
 
@@ -333,6 +417,19 @@ def validate_transition(
     expected = (config.td_horizon, config.action_dim)
     if tuple(transition.executed.shape) != expected:
         raise ValueError(f"executed must have shape {expected}.")
+    if transition.executed_physical is not None:
+        if (
+            tuple(transition.executed_physical.shape) != expected
+            or not torch.isfinite(transition.executed_physical).all()
+        ):
+            raise ValueError(
+                "Physical executed commands must be finite with the transition shape."
+            )
+    if transition.proposal_trace is not None:
+        if tuple(transition.proposal_trace.shape) != expected:
+            raise ValueError(f"proposal_trace must have shape {expected}.")
+        if not torch.isfinite(transition.proposal_trace).all():
+            raise ValueError("Policy proposal trace must be finite.")
     if not torch.allclose(
         transition.executed[: config.inference_horizon],
         transition.feature.committed,

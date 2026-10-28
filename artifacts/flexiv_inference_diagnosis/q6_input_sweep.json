@@ -1,0 +1,44 @@
+[
+  {
+    "input_q6": 0.954642,
+    "normalized_q6": -1.0474982261657715,
+    "q6_state_bin": -1,
+    "pred_q6_h15_mean": 0.9535896182060242,
+    "pred_q6_delta_h15_deg_mean": -0.060297035231220646
+  },
+  {
+    "input_q6": 0.963758,
+    "normalized_q6": -1.005790114402771,
+    "q6_state_bin": -1,
+    "pred_q6_h15_mean": 0.9535896182060242,
+    "pred_q6_delta_h15_deg_mean": -0.5826053612724799
+  },
+  {
+    "input_q6": 0.965024,
+    "normalized_q6": -0.9999977946281433,
+    "q6_state_bin": 0,
+    "pred_q6_h15_mean": 0.9643164277076721,
+    "pred_q6_delta_h15_deg_mean": -0.04054090605078409
+  },
+  {
+    "input_q6": 0.967444,
+    "normalized_q6": -0.9889256358146667,
+    "q6_state_bin": 1,
+    "pred_q6_h15_mean": 0.968439519405365,
+    "pred_q6_delta_h15_deg_mean": 0.057039060350788984
+  },
+  {
+    "input_q6": 0.97,
+    "normalized_q6": -0.9772311449050903,
+    "q6_state_bin": 2,
+    "pred_q6_h15_mean": 0.9688267707824707,
+    "pred_q6_delta_h15_deg_mean": -0.06722108256586316
+  },
+  {
+    "input_q6": 0.98,
+    "normalized_q6": -0.9314785003662109,
+    "q6_state_bin": 8,
+    "pred_q6_h15_mean": 0.9876545071601868,
+    "pred_q6_delta_h15_deg_mean": 0.43857095453137196
+  }
+]

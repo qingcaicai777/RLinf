@@ -154,7 +154,6 @@ class RLTTokenEncoder(nn.Module):
     def forward(
         self, prefix_embs: torch.Tensor, mask: torch.Tensor | None = None
     ) -> torch.Tensor:
-        prefix_embs = self.input_proj(prefix_embs)
         seq_len = prefix_embs.shape[-2]
         if seq_len > self.prefix_seq_len:
             raise ValueError(
@@ -162,11 +161,29 @@ class RLTTokenEncoder(nn.Module):
                 f"prefix_seq_len {self.prefix_seq_len}."
             )
 
-        prefix_pos = self.prefix_pos_enc[:seq_len].to(
-            device=prefix_embs.device, dtype=prefix_embs.dtype
-        )
-        prefix_tokens = prefix_embs + prefix_pos
         batch_size = prefix_embs.shape[0]
+        positions = None
+        if (
+            mask is not None
+            and batch_size == 1
+            and not self.training
+            and not torch.is_grad_enabled()
+        ):
+            valid = mask[0].to(device=prefix_embs.device, dtype=torch.bool)
+            positions = torch.nonzero(valid, as_tuple=True)[0]
+            if positions.numel() < seq_len:
+                prefix_embs = prefix_embs.index_select(1, positions)
+                mask = None
+            else:
+                positions = None
+        prefix_tokens = self.input_proj(prefix_embs)
+        prefix_pos = self.prefix_pos_enc[:seq_len]
+        if positions is not None:
+            # Keep the trained positions even when masked camera tokens are skipped.
+            prefix_pos = prefix_pos.index_select(0, positions)
+        prefix_tokens = prefix_tokens + prefix_pos.to(
+            device=prefix_tokens.device, dtype=prefix_tokens.dtype
+        )
         rl_tokens = (
             self.rl_token_embed.to(device=prefix_embs.device, dtype=prefix_embs.dtype)
             .unsqueeze(0)

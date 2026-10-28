@@ -1,0 +1,20 @@
+# Current TCP delta Stage1 path; CLI arguments override these defaults.
+action_representation: eef_delta
+checkpoint: /home/qccc/checkpoints/myq/ckpt_20000/full_weights.pt
+norm_stats: /home/qccc/checkpoints/myq/flexiv_delta_assets/norm_stats.json
+training_config: examples/sft/config/flexiv_rlt_stage1_sft_openpi_pi05.yaml
+backend: torch
+serve: true
+stage1_only: true
+base_chunk_steps: 22
+base_request_steps: 16
+rtc_guidance_mode: jacobian
+
+# Robot-side optional binary control; threshold compares the raw pre-unnormalization action.
+# Speed uses gripper_control.velocity_m_s; binary close uses 50 N with optional arm hold.
+# Opening and manual O/C use gripper_control.force_limit_n in --myq-config.
+gripper_policy:
+  binary: false
+  threshold: 0.5
+  # false lets the arm continue model motion during the 50 N binary closure.
+  hold_arm_on_close: true

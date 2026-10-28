@@ -367,7 +367,7 @@ class Attention(nn.Module):
         masked_logits = torch.where(
             mask_for_logits,
             logits,
-            torch.tensor(big_neg, dtype=logits.dtype, device=logits.device),
+            logits.new_full((), big_neg),
         )
 
         probs = F.softmax(masked_logits, dim=-1).to(dtype)

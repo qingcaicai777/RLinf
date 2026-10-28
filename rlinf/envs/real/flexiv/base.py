@@ -11,7 +11,6 @@
 from __future__ import annotations
 
 import copy
-import queue
 import threading
 import time
 from dataclasses import dataclass, field
@@ -28,6 +27,7 @@ from rlinf.scheduler import WorkerInfo
 from rlinf.utils.logging import get_logger
 
 from .action import apply_world_delta, denormalize_gripper, normalize_gripper
+from .gripper_command import LatestGripperCommand
 
 
 @dataclass
@@ -46,10 +46,10 @@ class FlexivEnvConfig:
     gripper_velocity_m_s: float = 0.05
     gripper_force_n: float = 20.0
     gripper_command_threshold: float = 0.01
-    max_linear_velocity_m_s: float = 0.06
-    max_angular_velocity_rad_s: float = 0.20
-    max_linear_acceleration_m_s2: float = 0.15
-    max_angular_acceleration_rad_s2: float = 0.45
+    max_linear_velocity_m_s: float | None = None
+    max_angular_velocity_rad_s: float | None = None
+    max_linear_acceleration_m_s2: float | None = None
+    max_angular_acceleration_rad_s2: float | None = None
     max_joint_velocity_rad_s: list[float] = field(default_factory=lambda: [0.2] * 7)
     max_joint_acceleration_rad_s2: list[float] = field(
         default_factory=lambda: [0.5] * 7
@@ -92,6 +92,16 @@ class FlexivEnvConfig:
         ).value
         if self.control_hz <= 0.0:
             raise ValueError("control_hz must be positive.")
+        cartesian_limits = (
+            self.max_linear_velocity_m_s,
+            self.max_angular_velocity_rad_s,
+            self.max_linear_acceleration_m_s2,
+            self.max_angular_acceleration_rad_s2,
+        )
+        if any(value is not None and value <= 0.0 for value in cartesian_limits):
+            raise ValueError(
+                "Configured Cartesian velocity and acceleration limits must be positive."
+            )
         if tuple(self.cameras) != ("main", "wrist"):
             raise ValueError(
                 "Flexiv online residual control requires main then wrist cameras."
@@ -221,62 +231,6 @@ class _RealSensePair:
         self._threads.clear()
 
 
-class _LatestGripperCommand:
-    """Execute blocking RDK gripper moves without stalling the 30 Hz arm loop."""
-
-    def __init__(self, gripper: Any, config: FlexivEnvConfig) -> None:
-        self._gripper = gripper
-        self._config = config
-        self._queue: queue.Queue[float | None] = queue.Queue(maxsize=1)
-        self._error: BaseException | None = None
-        self._thread = threading.Thread(target=self._run, daemon=True)
-        self._thread.start()
-
-    def submit(self, value: float) -> None:
-        """Replace an obsolete queued command with the newest target."""
-        if self._error is not None:
-            raise RuntimeError("Flexiv gripper command failed.") from self._error
-        try:
-            self._queue.put_nowait(float(value))
-        except queue.Full:
-            try:
-                self._queue.get_nowait()
-            except queue.Empty:
-                pass
-            self._queue.put_nowait(float(value))
-
-    def _run(self) -> None:
-        try:
-            while True:
-                value = self._queue.get()
-                if value is None:
-                    return
-                width = denormalize_gripper(
-                    value,
-                    closed_m=self._config.gripper_close_width_m,
-                    open_m=self._config.gripper_open_width_m,
-                )
-                self._gripper.Move(
-                    width,
-                    self._config.gripper_velocity_m_s,
-                    self._config.gripper_force_n,
-                )
-        except BaseException as exc:
-            self._error = exc
-
-    def close(self) -> None:
-        """Stop after any command already in progress returns."""
-        try:
-            self._queue.put_nowait(None)
-        except queue.Full:
-            try:
-                self._queue.get_nowait()
-            except queue.Empty:
-                pass
-            self._queue.put_nowait(None)
-        self._thread.join(timeout=2.0)
-
-
 class FlexivEnv(gym.Env):
     """Control one Rizon with EEF deltas or absolute joint targets."""
 
@@ -331,8 +285,25 @@ class FlexivEnv(gym.Env):
             )
         self.action_space = gym.spaces.Box(low, high, dtype=np.float32)
         frame_spaces = {
-            name: gym.spaces.Box(0, 255, shape=(224, 224, 3), dtype=np.uint8)
-            for name in ("main", "wrist")
+            name: gym.spaces.Box(
+                0,
+                255,
+                shape=(
+                    int(
+                        camera.get(
+                            "resize_height", camera.get("crop_height", camera["height"])
+                        )
+                    ),
+                    int(
+                        camera.get(
+                            "resize_width", camera.get("crop_width", camera["width"])
+                        )
+                    ),
+                    3,
+                ),
+                dtype=np.uint8,
+            )
+            for name, camera in self.config.cameras.items()
         }
         self.observation_space = gym.spaces.Dict(
             {
@@ -381,7 +352,11 @@ class FlexivEnv(gym.Env):
                 robot.SetForceControlAxis([False] * 6)
             else:
                 robot.SwitchMode(flexivrdk.Mode.NRT_JOINT_POSITION)
-            gripper_executor = _LatestGripperCommand(gripper, self.config)
+            gripper_executor = LatestGripperCommand(
+                gripper,
+                velocity_m_s=self.config.gripper_velocity_m_s,
+                force_n=self.config.gripper_force_n,
+            )
             cameras = _RealSensePair(self.config.cameras, self.config.camera_timeout_ms)
             self._robot = robot
             self._gripper = gripper
@@ -426,7 +401,9 @@ class FlexivEnv(gym.Env):
         q, _, gripper = self._read_state()
         if self.config.is_dummy:
             frames = {
-                name: np.zeros((224, 224, 3), dtype=np.uint8)
+                name: np.zeros(
+                    self.observation_space["frames"][name].shape, dtype=np.uint8
+                )
                 for name in ("main", "wrist")
             }
         else:
@@ -446,12 +423,18 @@ class FlexivEnv(gym.Env):
         q, pose, gripper = self._read_state()
         if self.config.is_dummy:
             frames = {
-                name: np.zeros((224, 224, 3), dtype=np.uint8)
+                name: np.zeros(
+                    self.observation_space["frames"][name].shape, dtype=np.uint8
+                )
                 for name in ("main", "wrist")
             }
         else:
             frames = self._cameras.read()
         return q, pose, gripper, frames
+
+    def read_tcp_pose(self) -> np.ndarray:
+        """Read the measured TCP pose without capturing either camera."""
+        return self._read_state()[1]
 
     def send_realtime_target(self, target: np.ndarray, gripper: float) -> None:
         """Send one final TCP target without sleeping or reading observations."""
@@ -465,15 +448,7 @@ class FlexivEnv(gym.Env):
         if self.config.is_dummy:
             self._dummy_pose = target.copy()
         else:
-            self._robot.SendCartesianMotionForce(
-                target.tolist(),
-                [0.0] * 6,
-                [0.0] * 6,
-                self.config.max_linear_velocity_m_s,
-                self.config.max_angular_velocity_rad_s,
-                self.config.max_linear_acceleration_m_s2,
-                self.config.max_angular_acceleration_rad_s2,
-            )
+            self._send_cartesian_target(target)
         self._submit_gripper(gripper)
         self._steps += 1
 
@@ -487,8 +462,35 @@ class FlexivEnv(gym.Env):
         if abs(gripper - self._last_gripper) < self.config.gripper_command_threshold:
             return
         if self._gripper_executor is not None:
-            self._gripper_executor.submit(gripper)
+            self._gripper_executor.submit(
+                denormalize_gripper(
+                    gripper,
+                    closed_m=self.config.gripper_close_width_m,
+                    open_m=self.config.gripper_open_width_m,
+                )
+            )
         self._last_gripper = gripper
+
+    def _send_cartesian_target(self, target: np.ndarray) -> None:
+        """Send a TCP target, leaving omitted limits at the RDK API defaults."""
+        configured = (
+            self.config.max_linear_velocity_m_s,
+            self.config.max_angular_velocity_rad_s,
+            self.config.max_linear_acceleration_m_s2,
+            self.config.max_angular_acceleration_rad_s2,
+        )
+        arguments: list[Any] = [target.tolist(), [0.0] * 6, [0.0] * 6]
+        defaults = (0.5, 1.0, 2.0, 5.0)
+        last_configured = max(
+            (index for index, value in enumerate(configured) if value is not None),
+            default=-1,
+        )
+        if last_configured >= 0:
+            arguments.extend(
+                defaults[index] if value is None else value
+                for index, value in enumerate(configured[: last_configured + 1])
+            )
+        self._robot.SendCartesianMotionForce(*arguments)
 
     def step(
         self, action: np.ndarray
@@ -517,15 +519,7 @@ class FlexivEnv(gym.Env):
             if self.config.is_dummy:
                 self._dummy_pose = target
             else:
-                self._robot.SendCartesianMotionForce(
-                    target.tolist(),
-                    [0.0] * 6,
-                    [0.0] * 6,
-                    self.config.max_linear_velocity_m_s,
-                    self.config.max_angular_velocity_rad_s,
-                    self.config.max_linear_acceleration_m_s2,
-                    self.config.max_angular_acceleration_rad_s2,
-                )
+                self._send_cartesian_target(target)
         else:
             target = action[:7]
             final_action = action.copy()

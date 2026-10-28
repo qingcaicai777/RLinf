@@ -26,6 +26,7 @@ runner:
 online_residual:
   enabled: true
   action_representation: "eef_delta"  # Set joint_absolute for 7 joints + gripper.
+  proprio_normalization: stage1
   proprio_dim: 8
   z_dim: 2048
   inference_horizon: 6
@@ -43,12 +44,16 @@ online_residual:
   ordinary_bc_weight: 5.0
   human_bc_multiplier: 5.0
   smooth_weight: 0.0
+  # eta_1, eta_2, eta_3: first-, second- and third-order non-gripper differences.
+  smooth_weights: [1.0, 1.0, 1.0]
   rollout_noise_std: 0.04
   target_noise_std: 0.04
   target_noise_clip: 0.10
   target_tau: 0.005
   critic_updates_per_transition: 5
   critic_updates_per_actor_update: 5
+  learner_device: cpu
+  learner_cpu_threads: 1
   actor_lr: 1.0e-4
   critic_lr: 3.0e-4
   max_grad_norm: 1.0
@@ -81,6 +86,8 @@ rollout:
       action_horizon: 32
       num_flow_steps: 10
       num_views: 2
+      # Avoid non-finite outputs from the current SM89 BF16 split-KV path.
+      disable_fa2_splitkv: true
       return_prefix_hidden_states: true
     online_residual: ${online_residual}
     rlt:

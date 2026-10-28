@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib.util
+import os
 import sys
 import time
 from pathlib import Path
@@ -322,12 +323,71 @@ def test_online_residual_controller_uses_final_receipts_as_next_committed_prefix
     assert controller.pending_proposal is not None
 
 
-def test_apxinf_adapter_exposes_normalized_actions_and_prefix_for_sidecar():
+def test_online_residual_controller_applies_rollout_noise_only_to_new_actions():
+    class Encoder(torch.nn.Module):
+        def encode_flat(self, prefix):
+            return prefix.mean(dim=1)
+
+    class RecordingActor(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.noise = None
+
+        def forward(self, z, proprio, base_reference, *, pre_tanh_noise=None):
+            del z, proprio
+            self.noise = pre_tanh_noise
+            return (
+                base_reference
+                if pre_tanh_noise is None
+                else base_reference + pre_tanh_noise
+            )
+
+    config = OnlineResidualRLConfig(z_dim=4, proprio_dim=3, hidden_dim=16)
+    actor = RecordingActor()
+    controller = OnlineResidualController(
+        config,
+        rlt_encoder=Encoder(),
+        actor=actor,
+    )
+    reference = torch.zeros(1, config.actor_horizon, config.action_dim)
+    prefix = torch.ones(1, 5, config.z_dim)
+    proprio = torch.zeros(1, config.proprio_dim)
+    torch.manual_seed(17)
+    decision = controller.decide(
+        prefix_hidden_states=prefix,
+        proprio=proprio,
+        base_reference=reference,
+        deterministic=False,
+    )
+
+    assert actor.noise is not None
+    assert not actor.noise[:, : config.inference_horizon].any()
+    assert actor.noise[:, config.inference_horizon :].any()
+    assert decision.actor_output[:, : config.inference_horizon].count_nonzero() == 0
+
+    base_decision = controller.decide(
+        prefix_hidden_states=prefix,
+        proprio=proprio,
+        base_reference=reference,
+        deterministic=False,
+        use_actor=False,
+    )
+    torch.testing.assert_close(base_decision.actor_output, reference)
+
+
+def test_apxinf_adapter_exposes_normalized_actions_and_prefix_for_sidecar(monkeypatch):
     class Model:
         action_horizon = 12
         action_dim = 32
         num_views = 2
         image_size = 224
+
+        def infer_rgb(self, rgb, layout, tokens, noise=None):
+            assert rgb.shape == (2, 224, 224, 3)
+            assert layout == "nhwc"
+            assert tokens.tolist() == [1, 2]
+            assert noise is None
+            return np.zeros((12, 32), dtype=np.float32)
 
         def infer_rgb_with_prefix(self, rgb, layout, tokens, noise=None):
             assert rgb.shape == (2, 224, 224, 3)
@@ -382,36 +442,193 @@ def test_apxinf_adapter_exposes_normalized_actions_and_prefix_for_sidecar():
     assert actions.shape == (1, 12, 7)
     assert result["normalized_actions"].shape == (1, 12, 32)
     assert result["prefix_hidden_states"].shape == (1, 514, 2048)
+    adapter.close()
+    adapter.close()
+
+    class CudaModel(Model):
+        def infer_rgb_with_prefix_cuda(self, rgb, layout, tokens, noise=None):
+            assert noise is None
+            return np.zeros((12, 32), dtype=np.float32), object(), object(), 1e-6
+
+    monkeypatch.setattr(
+        "rlinf.models.embodiment.openpi.apxinf_adapter._normalize_cuda_prefix",
+        lambda prefix, scale, eps: torch.ones(514, 2048),
+    )
+    cuda_adapter = OpenPIApxInfAdapter(
+        cfg,
+        "cpu",
+        model=CudaModel(),
+        processor=Processor(),
+    )
+    _, cuda_result = cuda_adapter.predict_action_batch({})
+    torch.testing.assert_close(
+        cuda_result["prefix_hidden_states"], result["prefix_hidden_states"]
+    )
+    cuda_adapter.close()
+
+    class NonBf16Model(CudaModel):
+        def infer_rgb_with_prefix_cuda(self, *args, **kwargs):
+            raise AssertionError("non-BF16 checkpoints must use the host prefix API")
+
+    cfg["apxinf"]["precision"] = "int8"
+    fallback_adapter = OpenPIApxInfAdapter(
+        cfg,
+        "cpu",
+        model=NonBf16Model(),
+        processor=Processor(),
+    )
+    _, fallback_result = fallback_adapter.predict_action_batch({})
+    torch.testing.assert_close(
+        fallback_result["prefix_hidden_states"], result["prefix_hidden_states"]
+    )
+    fallback_adapter.close()
+    cfg["apxinf"].pop("precision")
+
+    cfg["apxinf"].pop("num_flow_steps")
+    cfg["openpi"].pop("num_steps")
+    default_adapter = OpenPIApxInfAdapter(
+        cfg,
+        "cpu",
+        model=Model(),
+        processor=Processor(),
+    )
+    assert default_adapter.num_flow_steps == 10
+    default_adapter.close()
+
+    cfg["openpi"]["num_steps"] = 4
+    cfg["apxinf"]["num_flow_steps"] = 10
+    override_adapter = OpenPIApxInfAdapter(
+        cfg,
+        "cpu",
+        model=Model(),
+        processor=Processor(),
+    )
+    assert override_adapter.num_flow_steps == 10
+    override_adapter.close()
+
+    cfg["apxinf"]["return_prefix_hidden_states"] = False
+    stage1_adapter = OpenPIApxInfAdapter(
+        cfg,
+        "cpu",
+        model=Model(),
+        processor=Processor(),
+    )
+    stage1_actions, stage1_result = stage1_adapter.predict_action_batch({})
+    assert stage1_actions.shape == (1, 12, 7)
+    assert "prefix_hidden_states" not in stage1_result
+    stage1_adapter.close()
 
 
-def test_online_residual_apx_predicts_without_committed_or_decoder(tmp_path):
+def test_apxinf_adapter_disables_splitkv_when_configured(monkeypatch):
+    monkeypatch.delenv("APXINF_DISABLE_FA2_SPLITKV", raising=False)
+
+    class Model:
+        action_horizon = 12
+        action_dim = 32
+        num_views = 2
+        image_size = 224
+
+    class Processor:
+        pass
+
+    def load_model(*args, **kwargs):
+        assert os.environ["APXINF_DISABLE_FA2_SPLITKV"] == "1"
+        assert kwargs["num_flow_steps"] == 10
+        return Model()
+
+    monkeypatch.setitem(
+        sys.modules,
+        "apxinf_py",
+        SimpleNamespace(Model=SimpleNamespace(load=load_model)),
+    )
+    cfg = {
+        "model_path": "/tmp/openpi",
+        "action_dim": 7,
+        "num_action_chunks": 12,
+        "openpi": {
+            "config_name": "pi05_flexiv_online_residual",
+            "num_steps": 4,
+        },
+        "apxinf": {
+            "checkpoint": "/tmp/apx/model.safetensors",
+            "tactics": "/tmp/tactics.json",
+            "action_horizon": 12,
+            "num_flow_steps": 10,
+            "num_views": 2,
+            "disable_fa2_splitkv": True,
+        },
+    }
+    adapter = OpenPIApxInfAdapter(
+        cfg,
+        "cpu",
+        processor=Processor(),
+    )
+    adapter.close()
+
+
+def test_rlt_encoder_packs_masked_prefix_without_shifting_positions():
+    from rlinf.models.embodiment.modules.rlt_token_transformer import RLTTokenEncoder
+
+    encoder = RLTTokenEncoder(
+        input_dim=8, embed_dim=8, num_heads=2, prefix_seq_len=16
+    ).eval()
+    prefix = torch.randn(1, 10, 8)
+    mask = torch.tensor(
+        [[True, True, False, False, True, True, False, True, True, True]]
+    )
+
+    reference = encoder.encode_flat(prefix, mask)
+    with torch.inference_mode():
+        packed = encoder.encode_flat(prefix, mask)
+
+    torch.testing.assert_close(packed, reference, atol=2e-5, rtol=2e-5)
+
+
+@pytest.mark.parametrize("normalization", ["raw", "stage1"])
+def test_online_residual_apx_predicts_without_committed_or_decoder(
+    tmp_path, normalization
+):
     from rlinf.models.embodiment.modules.rlt_token_transformer import RLTTokenEncoder
     from rlinf.models.embodiment.openpi.apxinf_adapter import (
         OnlineResidualApxInfAdapter,
     )
 
     encoder = RLTTokenEncoder(input_dim=8, embed_dim=8, num_heads=2, prefix_seq_len=16)
-    checkpoint = tmp_path / "encoder.pt"
-    torch.save(encoder.state_dict(), checkpoint)
+    checkpoint = tmp_path / "stage1"
+    weights = checkpoint / "actor" / "model_state_dict" / "full_weights.pt"
+    weights.parent.mkdir(parents=True)
+    torch.save(
+        {
+            **{
+                f"rlt_module.encoder.{key}": value
+                for key, value in encoder.state_dict().items()
+            },
+            "img.encoder.layers.2.attn.weight": torch.ones(1),
+        },
+        weights,
+    )
 
     class Processor:
         def postprocess_batch(self, normalized, prepared, *, chunk_len):
             assert chunk_len == 12
+            assert normalized.shape == (1, 12, 32)
+            assert not normalized[..., 7:].any()
             return torch.from_numpy(normalized[:, :chunk_len, :7])
 
     class Base:
         return_prefix_hidden_states = True
         metadata = {"backend": "test"}
         processor = Processor()
+        model = SimpleNamespace(num_views=2, image_size=2, patch_size=1)
 
         def predict_action_batch(self, obs, *, mode):
             # No committed argument is supported by the VLA boundary.
             assert mode == "eval"
-            return None, {
+            return torch.zeros(1, 32, 7), {
                 "normalized_actions": torch.zeros(1, 12, 32),
                 "prefix_hidden_states": torch.ones(1, 10, 8),
                 "prefix_mask": torch.ones(1, 10, dtype=torch.bool),
-                "prepared": [{"state": np.zeros(8, dtype=np.float32)}],
+                "prepared": [{"state": np.full(8, -0.5, dtype=np.float32)}],
                 "apxinf_timing": [],
             }
 
@@ -419,7 +636,11 @@ def test_online_residual_apx_predicts_without_committed_or_decoder(tmp_path):
         {
             "num_action_chunks": 12,
             "action_dim": 7,
-            "online_residual": {"z_dim": 8, "hidden_dim": 8},
+            "online_residual": {
+                "z_dim": 8,
+                "hidden_dim": 8,
+                "proprio_normalization": normalization,
+            },
             "rlt": {
                 "checkpoint": str(checkpoint),
                 "num_heads": 2,
@@ -429,16 +650,517 @@ def test_online_residual_apx_predicts_without_committed_or_decoder(tmp_path):
         "cpu",
         base=Base(),
     )
-    actions, info = adapter.predict_action_batch({})
-    changed, candidate = adapter.predict_action_batch({}, committed=torch.ones(1, 6, 7))
+    seen = []
+    encode_flat = adapter.rlt_module.encode_flat
+
+    def capture_prefix(prefix, mask):
+        seen.append((prefix.detach().clone(), mask.detach().clone()))
+        return encode_flat(prefix, mask)
+
+    adapter.rlt_module.encode_flat = capture_prefix
+    observation = {"states": np.full((1, 8), 0.3, dtype=np.float32)}
+    coarse, _ = adapter.predict_base_action_batch(observation, horizon=10)
+    assert coarse.shape == (1, 32, 7)
+    actions, info = adapter.predict_action_batch(observation)
+    changed, candidate = adapter.predict_action_batch(
+        observation, committed=torch.ones(1, 6, 7)
+    )
     assert actions.shape == (1, 12, 7)
-    torch.testing.assert_close(changed[:, :6], torch.ones(1, 6, 7))
-    torch.testing.assert_close(changed[:, 6:], actions[:, 6:])
+    torch.testing.assert_close(changed, actions)
     assert info["forward_inputs"]["policy_proposal"] is None
+    torch.testing.assert_close(
+        info["forward_inputs"]["proprio"],
+        torch.full((1, 8), -0.5 if normalization == "stage1" else 0.3),
+    )
+    assert seen[0][0].shape == (1, 14, 8)
+    assert seen[0][1][0].tolist() == [True] * 8 + [False] * 4 + [True] * 2
+    if normalization == "raw":
+        with pytest.raises(ValueError, match="finite"):
+            adapter.predict_action_batch({"states": np.full((1, 8), np.nan)})
     torch.testing.assert_close(
         candidate["forward_inputs"]["policy_proposal"][:, :6], torch.ones(1, 6, 7)
     )
     assert not hasattr(adapter.rlt_module, "decoder")
+
+
+def test_openpi_rlinf_stage1_adapter_returns_full_horizon_with_raw_guidance(
+    monkeypatch,
+):
+    from rlinf.models.embodiment.openpi_rlinf.inference import (
+        OpenPIRLInfResidualAdapter,
+        OpenPIRLInfStage1Adapter,
+    )
+    from rlinf.models.embodiment.openpi_rlinf.sampling import rtc_guidance
+
+    class Model(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.weight = torch.nn.Parameter(torch.zeros(1))
+            self.rlt_cfg = SimpleNamespace(use_rlt=True, rlt_normalized_actions=True)
+            self.action_horizon = 32
+            self.action_dim = 32
+            self.action_env_dim = 7
+            self.num_steps = 10
+            self.rtc_guidance_clip = 5.0
+            self.contexts = []
+
+        @property
+        def device(self):
+            return self.weight.device
+
+        def extract_rlt_obs(self, obs, *, rtc_context=None):
+            del obs
+            self.contexts.append(rtc_context)
+            if rtc_context is not None:
+                assert rtc_context.delay_steps == 6
+                assert rtc_context.get_prev_remaining().shape == (1, 26, 32)
+                torch.testing.assert_close(
+                    rtc_context.get_prev_remaining()[0, :, :7], torch.ones(26, 7)
+                )
+            return {
+                "z_rl": torch.zeros(1, 4),
+                "proprio": torch.zeros(1, 8),
+                "ref_chunk": torch.zeros(1, 32, 7),
+                "raw_model_actions": torch.arange(32 * 32).reshape(1, 32, 32).float(),
+                "model_state": torch.zeros(1, 8),
+            }
+
+        def decode_rlt_actions(self, actions, state):
+            assert state.shape == (1, 8)
+            return actions + 0.25
+
+        def predict_action_batch(self, obs, mode="eval"):
+            assert mode == "eval"
+            assert obs["states"].shape == (1, 8)
+            return torch.full((1, 32, 7), 0.25), {
+                "model_actions": torch.zeros(1, 32, 32)
+            }
+
+        def env_obs_to_observation(self, obs):
+            assert obs["states"].shape == (1, 8)
+            return SimpleNamespace(state=torch.zeros(1, 8))
+
+        def normalize_rlt_actions(self, actions):
+            return actions - 0.25
+
+    contract = OnlineResidualRLConfig(z_dim=4, hidden_dim=8)
+    model = Model()
+    adapter = OpenPIRLInfResidualAdapter(model, contract)
+    observation = {"states": np.zeros((1, 8), np.float32)}
+    adapter.predict_action_batch(observation)
+    physical, metadata = adapter.predict_action_batch(
+        observation, committed=torch.ones(1, 26, 32)
+    )
+    assert model.contexts[0] is None and model.contexts[1] is not None
+    assert physical.shape == (1, 12, 7)
+    torch.testing.assert_close(physical, torch.full_like(physical, 0.25))
+    assert metadata["forward_inputs"]["policy_proposal"] is None
+    assert metadata["raw_model_actions"].shape == (1, 32, 32)
+    torch.testing.assert_close(
+        adapter.encode_receipts(physical), torch.zeros_like(physical)
+    )
+
+    def guided_actions(
+        model, observation, context, *, num_steps, guidance_clip, guidance_mode
+    ):
+        assert model is not None
+        assert observation.state.shape == (1, 8)
+        assert context.delay_steps == 6
+        assert context.get_prev_remaining().shape == (1, 26, 32)
+        assert num_steps == 10 and guidance_clip == 5.0
+        assert guidance_mode == "approx"
+        return torch.zeros(1, 32, 32)
+
+    monkeypatch.setattr(
+        rtc_guidance, "sample_actions_with_rtc_guidance", guided_actions
+    )
+    stage1 = OpenPIRLInfStage1Adapter(model, inference_horizon=6)
+    first, first_metadata = stage1.predict_action_batch(observation)
+    second, second_metadata = stage1.predict_action_batch(
+        observation, committed=torch.ones(1, 26, 32)
+    )
+    assert first.shape == second.shape == (1, 32, 7)
+    assert first_metadata["raw_model_actions"].shape == (1, 32, 32)
+    assert second_metadata["raw_model_actions"].shape == (1, 32, 32)
+    assert len(model.contexts) == 2
+    torch.testing.assert_close(stage1.encode_receipts(first), torch.zeros_like(first))
+
+    without_rtc = OpenPIRLInfStage1Adapter(model, inference_horizon=6, use_rtc=False)
+    assert not without_rtc.conditions_on_committed
+    no_rtc_actions, _ = without_rtc.predict_action_batch(
+        observation, committed=torch.ones(1, 26, 32)
+    )
+    assert len(model.contexts) == 2
+    torch.testing.assert_close(no_rtc_actions, first)
+
+    longer = OpenPIRLInfStage1Adapter(model, inference_horizon=10, use_rtc=False)
+    longer_actions, _ = longer.predict_action_batch(observation)
+    assert longer_actions.shape == (1, 32, 7)
+
+    def guided_long(
+        _model, _observation, context, *, num_steps, guidance_clip, guidance_mode
+    ):
+        assert context.delay_steps == 10
+        assert context.get_prev_remaining().shape == (1, 22, 32)
+        return torch.zeros(1, 32, 32)
+
+    monkeypatch.setattr(rtc_guidance, "sample_actions_with_rtc_guidance", guided_long)
+    longer_rtc = OpenPIRLInfStage1Adapter(model, inference_horizon=10)
+    guided, _ = longer_rtc.predict_action_batch(
+        observation, committed=torch.ones(1, 22, 32)
+    )
+    assert guided.shape == (1, 32, 7)
+    staged = OpenPIRLInfResidualAdapter(model, contract, base_horizon=10)
+    coarse, _ = staged.predict_base_action_batch(observation, horizon=10)
+    assert coarse.shape == (1, 32, 7)
+
+    def guided_short(
+        _model, _observation, context, *, num_steps, guidance_clip, guidance_mode
+    ):
+        assert context.delay_steps == 0
+        assert context.get_prev_remaining().shape == (1, 1, 32)
+        return torch.zeros(1, 32, 32)
+
+    monkeypatch.setattr(rtc_guidance, "sample_actions_with_rtc_guidance", guided_short)
+    nearly_full = OpenPIRLInfStage1Adapter(model, inference_horizon=31)
+    short_overlap, _ = nearly_full.predict_base_action_batch(
+        observation,
+        horizon=31,
+        committed=torch.ones(1, 1, 32),
+        rtc_delay_steps=0,
+    )
+    assert short_overlap.shape == (1, 32, 7)
+    OpenPIRLInfStage1Adapter(model, inference_horizon=32)
+    with pytest.raises(ValueError, match="fit in the model horizon"):
+        OpenPIRLInfStage1Adapter(model, inference_horizon=33)
+
+
+def test_stage1_apx_export_maps_base_weights_without_rlt_or_unused_expert_head():
+    from rlinf.utils.ckpt_convertor.openpi.sft_to_apxinf import prepare_apx_weights
+
+    bare = {
+        "img.stem.weight": torch.ones(2, 3),
+        "llm.embedder.embedding.weight": torch.ones(4, 2),
+        "action_in_proj.weight": torch.ones(2, 7),
+        "action_out_proj.weight": torch.ones(7, 2),
+        "time_mlp_in.weight": torch.ones(2, 2),
+        "time_mlp_out.weight": torch.ones(2, 2),
+        "rlt_module.encoder.prefix_pos_enc": torch.ones(1, 2),
+    }
+    converted = prepare_apx_weights(bare)
+    assert all(not key.startswith("rlt_module.") for key in converted)
+    assert "paligemma_with_expert.gemma_expert.lm_head.weight" not in converted
+    assert "paligemma_with_expert.paligemma.lm_head.weight" in converted
+    assert all(tensor.dtype == torch.bfloat16 for tensor in converted.values())
+
+    with pytest.raises(ValueError, match="missing APX PI0.5 weights"):
+        prepare_apx_weights({"llm.embedder.embedding.weight": torch.ones(4, 2)})
+
+
+@pytest.mark.parametrize(
+    "representation,width", [("eef_delta", 7), ("joint_absolute", 8)]
+)
+def test_openpi_rlinf_stage1_loader_uses_sft_shape(
+    monkeypatch, tmp_path, representation, width
+):
+    from rlinf.models.embodiment.openpi_rlinf import inference
+
+    captured = {}
+
+    class Model:
+        def to(self, device):
+            captured["device"] = device
+            return self
+
+        def eval(self):
+            return self
+
+    def fake_get_model(config):
+        captured["config"] = config
+        return Model()
+
+    monkeypatch.setattr(inference, "get_model", fake_get_model)
+    import json
+
+    recipe = Path(
+        "examples/sft/config/flexiv_joint_stage1_inference.yaml"
+        if width == 8
+        else "examples/sft/config/flexiv_rlt_stage1_sft_openpi_pi05.yaml"
+    )
+    norm_stats = tmp_path / "norm_stats.json"
+    stats = {
+        name: {
+            "mean": [0.0] * size,
+            "std": [1.0] * size,
+            "q01": [-1.0] * size,
+            "q99": [1.0] * size,
+        }
+        for name, size in (("state", 8), ("actions", width))
+    }
+    norm_stats.write_text(json.dumps({"norm_stats": stats}), encoding="utf-8")
+    inference.load_stage1_model(
+        recipe,
+        "/tmp/stage1",
+        "cpu",
+        norm_stats_path=norm_stats,
+        action_representation=representation,
+    )
+    cfg = captured["config"]
+    assert cfg.model_path == "/tmp/stage1"
+    assert cfg.openpi.task == "eval"
+    assert cfg.openpi.action_horizon == 32
+    assert cfg.openpi.action_chunk == 32
+    assert cfg.num_steps == cfg.openpi.num_steps == 10
+    assert cfg.openpi.rlt_prefix_seq_len == 1024
+    assert cfg.action_dim == cfg.openpi.action_env_dim == width
+    assert cfg.openpi_data.norm_stats_path == str(norm_stats)
+    assert captured["device"] == "cpu"
+    inference.load_stage1_model(
+        recipe,
+        "/tmp/stage1",
+        "cpu",
+        norm_stats_path=norm_stats,
+        num_flow_steps=6,
+        action_representation=representation,
+    )
+    assert captured["config"].num_steps == captured["config"].openpi.num_steps == 6
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA graph needs a GPU")
+def test_openpi_cuda_graph_suffix_uses_current_actions_and_prefix_cache():
+    """Graph replay must read new request inputs, not captured values."""
+    from rlinf.models.embodiment.openpi_rlinf.sampling.cuda_graph import (
+        CudaGraphedSuffix,
+    )
+
+    class Model:
+        pi05 = True
+        device = torch.device("cuda:0")
+
+        def run_suffix(self, _observation, actions, timestep, cache, prefix_mask):
+            key, value = cache[0]
+            return (
+                actions
+                + timestep[:, None, None]
+                + key.mean()
+                + value.mean()
+                + prefix_mask.float().mean()
+            )
+
+        def velocity_from_suffix(self, suffix):
+            return suffix * 2
+
+    model = Model()
+    graph = CudaGraphedSuffix(model)
+    with torch.inference_mode():
+        for offset in (0.0, 1.0, 2.0):
+            actions = torch.full((1, 2, 3), offset, device="cuda")
+            timestep = torch.tensor([offset / 10], device="cuda")
+            cache = (
+                (
+                    torch.full((1, 2, 3), offset + 1, device="cuda"),
+                    torch.full((1, 2, 3), offset + 2, device="cuda"),
+                ),
+            )
+            prefix_mask = torch.tensor(
+                [[True, offset > 0]], device="cuda", dtype=torch.bool
+            )
+            expected = model.velocity_from_suffix(
+                model.run_suffix(None, actions, timestep, cache, prefix_mask)
+            )
+            actual = graph(None, actions, timestep, cache, prefix_mask)
+            torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+            # A guided step uses autograd independently of the replay buffers.
+            with torch.inference_mode(False), torch.enable_grad():
+                guided_actions = actions.clone().requires_grad_(True)
+                guided = model.velocity_from_suffix(
+                    model.run_suffix(None, guided_actions, timestep, cache, prefix_mask)
+                )
+                gradient = torch.autograd.grad(guided.sum(), guided_actions)[0]
+                torch.testing.assert_close(gradient, torch.full_like(gradient, 2))
+
+
+@pytest.mark.parametrize(
+    "asset_dir,recipe_name",
+    [
+        ("flexiv_delta_assets", "flexiv_rlt_stage1_sft_openpi_pi05.yaml"),
+        ("flexiv_joint_assets", "flexiv_joint_stage1_inference.yaml"),
+    ],
+)
+def test_stage1_norm_stats_defaults_to_checkpoint_sibling(
+    tmp_path, asset_dir, recipe_name
+):
+    from rlinf.models.embodiment.openpi_rlinf.inference import (
+        resolve_stage1_norm_stats,
+    )
+
+    weights = tmp_path / "model_state_dict" / "full_weights.pt"
+    weights.parent.mkdir()
+    weights.touch()
+    stats = tmp_path / asset_dir / "norm_stats.json"
+    stats.parent.mkdir()
+    stats.write_text("{}", encoding="utf-8")
+    recipe = Path("examples/sft/config") / recipe_name
+    assert resolve_stage1_norm_stats(recipe, weights) == stats.resolve()
+
+
+def test_online_residual_actor_loads_published_and_training_weights(tmp_path):
+    from rlinf.algorithms.online_residual_rl.checkpoint import load_actor_state
+
+    actor = ResidualActor(OnlineResidualRLConfig(z_dim=4, hidden_dim=8))
+    published = tmp_path / "actor.pt"
+    torch.save(actor.state_dict(), published)
+    assert load_actor_state(published).keys() == actor.state_dict().keys()
+
+    training = tmp_path / "training.pt"
+    learner = {
+        **{f"actor.{key}": value for key, value in actor.state_dict().items()},
+        "target_actor.extra": torch.tensor(1),
+    }
+    torch.save({"learner": learner, "config": {}}, training)
+    assert load_actor_state(training).keys() == actor.state_dict().keys()
+
+
+def test_openpi_rlinf_rtc_sampler_reuses_stage1_prefix_cache():
+    from rlinf.models.embodiment.openpi_rlinf.sampling.rtc_guidance import (
+        sample_actions_with_rtc_guidance,
+    )
+
+    class Model:
+        action_horizon = 12
+        action_dim = 32
+
+        def __init__(self, velocity=0.0):
+            self.velocity = velocity
+
+        def build_prefix_cache(self, observation):
+            raise AssertionError("Prefix cache must be reused")
+
+        def run_suffix(self, observation, x_t, t, kv_cache, prefix_mask):
+            del observation, t, kv_cache, prefix_mask
+            return torch.full_like(x_t, self.velocity)
+
+        def velocity_from_suffix(self, suffix):
+            return suffix
+
+    observation = SimpleNamespace(state=torch.zeros(1, 8))
+    result = sample_actions_with_rtc_guidance(
+        Model(),
+        observation,
+        None,
+        num_steps=1,
+        noise=torch.zeros(1, 12, 32),
+        prefix_cache=(torch.ones(1, 1, dtype=torch.bool), ()),
+    )
+    torch.testing.assert_close(result, torch.zeros(1, 12, 32))
+
+    noise = torch.linspace(-0.5, 0.5, 12 * 32).reshape(1, 12, 32)
+    legacy_rng = torch.Generator().manual_seed(41)
+    for _ in range(3):
+        torch.randn(noise.shape, generator=legacy_rng)
+    optimized_rng = torch.Generator().manual_seed(41)
+    actual = sample_actions_with_rtc_guidance(
+        Model(0.125),
+        observation,
+        None,
+        num_steps=3,
+        noise=noise,
+        rng=optimized_rng,
+        prefix_cache=(torch.ones(1, 1, dtype=torch.bool), ()),
+    )
+    torch.testing.assert_close(actual, noise - 0.125, atol=1e-6, rtol=1e-6)
+    torch.testing.assert_close(
+        torch.randn(4, generator=optimized_rng),
+        torch.randn(4, generator=legacy_rng),
+    )
+
+
+@pytest.mark.parametrize("num_steps", (1, 3, 10, 20))
+@pytest.mark.parametrize("guidance_clip", (1.0, 10.0, 100.0))
+def test_openpi_rlinf_rtc_approx_stays_within_overlap_target(num_steps, guidance_clip):
+    from rlinf.models.embodiment.openpi.rtc_guidance import RTCGuidanceContext
+    from rlinf.models.embodiment.openpi_rlinf.sampling.rtc_guidance import (
+        sample_actions_with_rtc_guidance,
+    )
+
+    class ConstantModel:
+        action_horizon = 3
+        action_dim = 1
+
+        def __init__(self):
+            self.inputs = []
+
+        def sample_velocity(self, observation, x_t, timestep, kv_cache, prefix_mask):
+            self.inputs.append(x_t.clone())
+            return torch.zeros_like(x_t)
+
+    model = ConstantModel()
+    rng = torch.Generator().manual_seed(41)
+    result = sample_actions_with_rtc_guidance(
+        model,
+        SimpleNamespace(state=torch.zeros(1, 1)),
+        RTCGuidanceContext(prev_model_actions=torch.zeros(1, 2, 1), delay_steps=1),
+        num_steps=num_steps,
+        noise=torch.ones(1, 3, 1),
+        rng=rng,
+        guidance_clip=guidance_clip,
+        guidance_mode="approx",
+        prefix_cache=(torch.ones(1, 1, dtype=torch.bool), ()),
+    )
+    trajectory = torch.stack([*model.inputs, result])
+    assert bool(((trajectory >= 0) & (trajectory <= 1)).all())
+    assert bool((trajectory[1:] <= trajectory[:-1]).all())
+    assert result[0, 0, 0] <= result[0, 1, 0] < 1
+    torch.testing.assert_close(trajectory[:, 0, 2, 0], torch.ones(num_steps + 1))
+    first_change = trajectory[0, 0, 0, 0] - trajectory[1, 0, 0, 0]
+    assert first_change <= min(guidance_clip / num_steps, 1.0) + 1e-6
+
+    expected_rng = torch.Generator().manual_seed(41)
+    for _ in range(num_steps):
+        torch.randn(result.shape, generator=expected_rng)
+    torch.testing.assert_close(
+        torch.randn(4, generator=rng), torch.randn(4, generator=expected_rng)
+    )
+
+
+def test_openpi_rlinf_rtc_jacobian_mode_uses_clean_action_vjp():
+    from rlinf.models.embodiment.openpi.rtc_guidance import (
+        RTCGuidanceContext,
+        build_rtc_target_and_mask,
+    )
+    from rlinf.models.embodiment.openpi_rlinf.sampling.rtc_guidance import (
+        sample_actions_with_rtc_guidance,
+    )
+
+    class DifferentiableModel:
+        action_horizon = 2
+        action_dim = 1
+
+        def sample_velocity(self, observation, x_t, timestep, kv_cache, prefix_mask):
+            del observation, timestep, kv_cache, prefix_mask
+            return x_t * 0.0 + 0.125
+
+    observation = SimpleNamespace(state=torch.zeros(1, 1))
+    noise = torch.tensor([[[0.1], [0.2]]])
+    context = RTCGuidanceContext(
+        prev_model_actions=torch.full_like(noise, 0.25), delay_steps=1
+    )
+    result = sample_actions_with_rtc_guidance(
+        DifferentiableModel(),
+        observation,
+        context,
+        num_steps=1,
+        noise=noise,
+        guidance_clip=5.0,
+        guidance_mode="jacobian",
+        prefix_cache=(torch.ones(1, 1, dtype=torch.bool), ()),
+    )
+    target, mask = build_rtc_target_and_mask(
+        context.get_prev_remaining(), 2, 1, 1, noise.device, noise.dtype
+    )
+    mean = noise - 0.125
+    expected = mean + 5.0 * (target - mean) * mask
+    torch.testing.assert_close(result, expected)
 
 
 def test_apxinf_rollout_forwards_real_committed_prefix_only_for_online_policy():
@@ -1261,3 +1983,61 @@ def test_delay_metrics_report_every_sample():
 
     assert metrics.tolist() == pytest.approx([0.03, 0.03])
     assert env.insert_delay_metrics().numel() == 0
+
+
+def test_joint_stage2_actor_checkpoint_rejects_tcp_weights(tmp_path):
+    from rlinf.algorithms.online_residual_rl.checkpoint import load_actor_state
+
+    joint = OnlineResidualRLConfig(
+        action_representation="joint_absolute", z_dim=4, hidden_dim=8
+    )
+    tcp = OnlineResidualRLConfig(z_dim=4, hidden_dim=8)
+    path = tmp_path / "actor.pt"
+    actor = ResidualActor(joint)
+    torch.save(actor.state_dict(), path)
+    restored = load_actor_state(path, joint)
+    target = ResidualActor(joint)
+    target.load_state_dict(restored)
+    output = target(torch.zeros(1, 4), torch.zeros(1, 8), torch.zeros(1, 12, 8))
+    assert output.shape == (1, 12, 8)
+    with pytest.raises(ValueError, match="shape"):
+        load_actor_state(path, tcp)
+    torch.save(ResidualActor(tcp).state_dict(), path)
+    with pytest.raises(ValueError, match="shape"):
+        load_actor_state(path, joint)
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [("pi05_flexiv_joint_absolute", -0.5), ("pi05_flexiv", -0.5), ("pi05_libero", 0.3)],
+)
+def test_stage1_rlt_proprio_uses_flexiv_model_input_normalization(
+    monkeypatch, name, expected
+):
+    from rlinf.models.embodiment.openpi_rlinf.tasks import eval as eval_module
+
+    observation = SimpleNamespace(
+        state=torch.full((1, 32), -0.5), tokenized_prompt=None
+    )
+    monkeypatch.setattr(eval_module, "preprocess_observation", lambda obs, train: obs)
+    model = SimpleNamespace(
+        config_name=name,
+        _require_rlt=lambda: None,
+        env_obs_to_observation=lambda obs: observation,
+        build_prefix_cache=lambda obs: (
+            torch.zeros(1, 2, 4),
+            torch.ones(1, 2, dtype=torch.bool),
+            None,
+        ),
+        _select_rlt_prefix_embeddings=lambda prefix, mask, prompt: (prefix, mask),
+        _encode_rlt_flat=lambda prefix, mask: torch.zeros(1, 4),
+        _sample_actions_from_prefix_cache=lambda *args: torch.zeros(1, 32, 32),
+        _select_configured_state=lambda states: states,
+        rlt_cfg=SimpleNamespace(rlt_normalized_actions=True),
+        action_env_dim=8,
+        action_chunk=12,
+    )
+    result = eval_module.Pi0Eval.extract_rlt_obs(
+        model, {"states": torch.full((1, 8), 0.3)}
+    )
+    torch.testing.assert_close(result["proprio"], torch.full((1, 8), expected))

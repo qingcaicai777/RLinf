@@ -1,0 +1,30 @@
+# Use this file on both the inference server and the robot client.
+action_representation: joint_absolute
+checkpoint: /home/qccc/checkpoints/myq/ckpt_1013_12000/full_weights.pt
+norm_stats: /home/qccc/checkpoints/myq/connecter_1010/peg_insertion_joint_absolute_1008_v4/norm_stats.json
+training_config: examples/sft/config/flexiv_joint_stage1_inference.yaml
+backend: torch
+disable_debug: true
+num_flow_steps: 10
+serve: true
+stage1_only: true
+# Robot-side Home: measured joints from the first frame of the first episode.
+home_dataset_path: /home/qccc/Flexiv/flexiv_rdk/example_py/myq/peg_insertion_joint_absolute_1008/data
+base_chunk_steps: 20
+base_request_steps: 16
+# Keep raw normalized joint overlap for RTC; no TCP pose rebasing.
+rtc_guidance_mode: jacobian
+joint_control:
+  # SendJointPosition uses rad/s and rad/s^2, with zero terminal velocities.
+  # Conservative motion-generator limits for autonomous policy targets.
+  max_joint_velocity_rad_s: [0.06, 0.06, 0.06, 0.06, 0.06, 0.06, 0.06]
+  max_joint_acceleration_rad_s2: [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15]
+
+# Robot-side optional binary control; threshold compares the raw pre-unnormalization action.
+# Speed uses gripper_control.velocity_m_s; binary close uses 50 N with optional arm hold.
+# Opening and manual O/C use gripper_control.force_limit_n in --myq-config.
+gripper_policy:
+  binary: true
+  threshold: 0.5
+  # false lets the arm continue model motion during the 50 N binary closure.
+  hold_arm_on_close: false

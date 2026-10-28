@@ -1,0 +1,43 @@
+{
+  "ticks": 100,
+  "held_ticks": [],
+  "handoff_steps": [
+    {
+      "tick": 20,
+      "max_joint_target_step_deg": 0.5172058296154606,
+      "joint": 7,
+      "required_one_tick_velocity_rad_s": 0.2708083391189575
+    },
+    {
+      "tick": 36,
+      "max_joint_target_step_deg": 1.8334754902307129,
+      "joint": 6,
+      "required_one_tick_velocity_rad_s": 0.960005521774292
+    },
+    {
+      "tick": 52,
+      "max_joint_target_step_deg": 1.4000248553125336,
+      "joint": 6,
+      "required_one_tick_velocity_rad_s": 0.7330513000488281
+    },
+    {
+      "tick": 68,
+      "max_joint_target_step_deg": 2.0235938057780176,
+      "joint": 6,
+      "required_one_tick_velocity_rad_s": 1.0595512390136719
+    },
+    {
+      "tick": 84,
+      "max_joint_target_step_deg": 0.41868632725355037,
+      "joint": 1,
+      "required_one_tick_velocity_rad_s": 0.21922364830970764
+    }
+  ],
+  "max_target_step_deg": 2.0235938057780176,
+  "configured_max_joint_velocity_rad_s": 0.2,
+  "notes": [
+    "Uses real policy server/client and recorded observations; robot SDK is unused.",
+    "Recorded observations do not simulate actual robot tracking or closed-loop task outcomes.",
+    "Target-step velocity describes the requested target sequence, not physical joint velocity."
+  ]
+}
