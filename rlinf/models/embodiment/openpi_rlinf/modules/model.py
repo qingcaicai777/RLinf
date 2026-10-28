@@ -212,7 +212,9 @@ def preprocess_observation(
     """Preprocess observations with optional image augmentations.
 
     For training, applies random crop, rotate, and color jitter augmentations.
-    Resizes images to the target resolution with padding.
+    Resizes images to the target resolution with padding. When ``rng`` is
+    omitted, augmentations use the global PyTorch RNG; an explicit CPU
+    generator makes their random choices reproducible.
     """
     if not set(image_keys).issubset(observation.images):
         raise ValueError(
@@ -242,45 +244,32 @@ def preprocess_observation(
             B = image.shape[0]
             augmented = []
             for i in range(B):
+                import torchvision.transforms.functional as TF
+
                 aug_image = image[i]  # (H, W, C)
                 aug_image = aug_image.permute(2, 0, 1)  # (C, H, W) for torchvision
 
                 if "wrist" not in key:
                     # Random crop (95% of size) then resize back
-                    import torchvision.transforms.functional as TF
-
                     h, w = aug_image.shape[1], aug_image.shape[2]
                     crop_h, crop_w = int(h * 0.95), int(w * 0.95)
-                    top = (
-                        torch.randint(0, h - crop_h + 1, (1,), generator=rng).item()
-                        if rng is not None
-                        else 0
-                    )
-                    left = (
-                        torch.randint(0, w - crop_w + 1, (1,), generator=rng).item()
-                        if rng is not None
-                        else 0
-                    )
+                    top = torch.randint(0, h - crop_h + 1, (1,), generator=rng).item()
+                    left = torch.randint(0, w - crop_w + 1, (1,), generator=rng).item()
                     aug_image = TF.crop(aug_image, top, left, crop_h, crop_w)
                     aug_image = TF.resize(aug_image, [h, w], antialias=True)
 
                     # Random rotation (-5 to 5 degrees)
-                    angle = (
-                        (torch.rand(1, generator=rng).item() * 10 - 5)
-                        if rng is not None
-                        else 0.0
-                    )
+                    angle = torch.rand(1, generator=rng).item() * 10 - 5
                     aug_image = TF.rotate(aug_image, angle, fill=0)
 
                 # Color jitter
                 # Simulate augmax ColorJitter(brightness=0.3, contrast=0.4, saturation=0.5)
-                if rng is not None:
-                    b = torch.rand(1, generator=rng).item() * 0.3
-                    c = torch.rand(1, generator=rng).item() * 0.4
-                    s = torch.rand(1, generator=rng).item() * 0.5
-                    aug_image = TF.adjust_brightness(aug_image, 1.0 + b)
-                    aug_image = TF.adjust_contrast(aug_image, 1.0 + c)
-                    aug_image = TF.adjust_saturation(aug_image, 1.0 + s)
+                b = torch.rand(1, generator=rng).item() * 0.3
+                c = torch.rand(1, generator=rng).item() * 0.4
+                s = torch.rand(1, generator=rng).item() * 0.5
+                aug_image = TF.adjust_brightness(aug_image, 1.0 + b)
+                aug_image = TF.adjust_contrast(aug_image, 1.0 + c)
+                aug_image = TF.adjust_saturation(aug_image, 1.0 + s)
 
                 aug_image = aug_image.permute(1, 2, 0)  # back to (H, W, C)
                 augmented.append(aug_image)

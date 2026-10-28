@@ -75,6 +75,7 @@ class FrankaEEInputs(transforms.DataTransformFn):
     # Do not change this for your own dataset.
     model_type: _model.ModelType = _model.ModelType.PI0
     pad_state: bool = True
+    pad_actions: bool = True
     use_wrist_image: bool = False
 
     def __call__(self, data: dict) -> dict:
@@ -123,9 +124,11 @@ class FrankaEEInputs(transforms.DataTransformFn):
 
         # Pad actions to the model action dimension. Keep this for your own dataset.
         # Actions are only available during training.
-        if "actions" in data:
+        if "actions" in data and self.pad_actions:
             actions = transforms.pad_to_dim(data["actions"], self.action_dim)
             inputs["actions"] = actions
+        elif "actions" in data:
+            inputs["actions"] = data["actions"]
 
         if "prompt" in data:
             if isinstance(data["prompt"], bytes):

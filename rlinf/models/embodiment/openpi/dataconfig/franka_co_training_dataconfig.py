@@ -40,6 +40,7 @@ class LeRobotFrankaEEDataConfig(DataConfigFactory):
     output_action_dim: int = 7
     # Keep Pi0.5 discrete state prompts at the raw dataset state dimension.
     pad_state: bool = True
+    pad_actions: bool = True
     use_wrist_image: bool = False
 
     def generate_observations(
@@ -74,6 +75,7 @@ class LeRobotFrankaEEDataConfig(DataConfigFactory):
                     action_dim=model_config.action_dim,
                     model_type=model_config.model_type,
                     pad_state=self.pad_state,
+                    pad_actions=self.pad_actions,
                     use_wrist_image=self.use_wrist_image,
                 )
             ],

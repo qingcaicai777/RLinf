@@ -12,14 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Dataset adapter for compact single-arm Flexiv demonstrations.
-
-The recordings retain commanded absolute TCP targets. This adapter constructs
-the future action chunk and converts every target to a delta in the recording's
-TCP control frame from the current measured TCP immediately before the OpenPI
-input transforms run.
-The source dataset is never rewritten.
-"""
+"""Dataset adapter for compact single-arm Flexiv demonstrations."""
 
 from __future__ import annotations
 
@@ -65,9 +58,7 @@ def absolute_tcp_chunk_to_control_delta(
             f"absolute_actions must end in dimension 7, got {targets.shape}."
         )
     try:
-        reference = np.broadcast_to(
-            reference, targets.shape[:-1] + (6,)
-        ).copy()
+        reference = np.broadcast_to(reference, targets.shape[:-1] + (6,)).copy()
     except ValueError as exc:
         raise ValueError(
             "measured_tcp leading dimensions must broadcast to the action chunk."
@@ -80,8 +71,10 @@ def absolute_tcp_chunk_to_control_delta(
     reference_rotation = Rotation.from_rotvec(reference[..., 3:6].reshape(-1, 3))
     target_rotation = Rotation.from_rotvec(targets[..., 3:6].reshape(-1, 3))
     result[..., 3:6] = (
-        target_rotation * reference_rotation.inv()
-    ).as_rotvec().reshape(targets.shape[:-1] + (3,))
+        (target_rotation * reference_rotation.inv())
+        .as_rotvec()
+        .reshape(targets.shape[:-1] + (3,))
+    )
     return result
 
 
@@ -101,6 +94,42 @@ def future_action_indices(length: int, horizon: int) -> np.ndarray:
     starts = np.arange(length, dtype=np.int64)[:, None]
     offsets = np.arange(horizon, dtype=np.int64)[None, :]
     return np.minimum(starts + offsets, length - 1)
+
+
+def future_joint_position_actions(
+    joint_positions: np.ndarray, gripper_positions: np.ndarray, indices: np.ndarray
+) -> np.ndarray:
+    """Build absolute seven-joint plus gripper actions at future indices."""
+    joints = np.asarray(joint_positions, dtype=np.float64)
+    grippers = np.asarray(gripper_positions, dtype=np.float64)
+    future = np.asarray(indices, dtype=np.int64)
+    if joints.ndim != 2 or joints.shape[-1] != 7:
+        raise ValueError(f"joint_positions must have shape [T, 7], got {joints.shape}.")
+    if grippers.shape != (len(joints), 1):
+        raise ValueError(
+            "gripper_positions must have shape "
+            f"[{len(joints)}, 1], got {grippers.shape}."
+        )
+    if future.ndim != 2 or np.any(future < 0) or np.any(future >= len(joints)):
+        raise ValueError("indices must be a valid rank-two index array.")
+    actions = np.concatenate((joints[future], grippers[future]), axis=-1)
+    if not np.isfinite(actions).all():
+        raise ValueError("Joint positions and gripper positions must be finite.")
+    return actions
+
+
+def future_action_chunks(actions: np.ndarray, indices: np.ndarray) -> np.ndarray:
+    """Gather episode-local action chunks using validated future indices."""
+    values = np.asarray(actions, dtype=np.float64)
+    future = np.asarray(indices, dtype=np.int64)
+    if values.ndim != 2 or values.shape[-1] != 8:
+        raise ValueError(f"actions must have shape [T, 8], got {values.shape}.")
+    if future.ndim != 2 or np.any(future < 0) or np.any(future >= len(values)):
+        raise ValueError("indices must be a valid rank-two index array.")
+    chunks = values[future]
+    if not np.isfinite(chunks).all():
+        raise ValueError("Actions must contain only finite values.")
+    return chunks
 
 
 def _read_json_lines(path: Path) -> list[dict[str, Any]]:
@@ -141,7 +170,9 @@ class FlexivSftDataset(torch.utils.data.Dataset):
         episode_rows.sort(key=lambda row: int(row["episode_index"]))
         lengths = [int(row["length"]) for row in episode_rows]
         if any(length <= 0 for length in lengths):
-            raise ValueError("Every Flexiv SFT episode must contain at least one frame.")
+            raise ValueError(
+                "Every Flexiv SFT episode must contain at least one frame."
+            )
         self._episode_ends = np.cumsum(lengths, dtype=np.int64).tolist()
         self._episode_starts = [0, *self._episode_ends[:-1]]
 
@@ -171,20 +202,14 @@ class FlexivSftDataset(torch.utils.data.Dataset):
     @staticmethod
     def _validate_metadata(metadata: dict[str, Any]) -> None:
         expected = {
-            "observation.eef_state": [6],
             "observation.joint_state": [7],
             "observation.gripper_state": [1],
-            "action": [7],
+            "action": [8],
         }
         features = metadata.get("features", {})
         for key, shape in expected.items():
             if features.get(key, {}).get("shape") != shape:
                 raise ValueError(f"Flexiv SFT {key} must have shape {shape}.")
-        if metadata.get("action_representation") != "eef_absolute":
-            raise ValueError(
-                "Flexiv SFT expects source action_representation='eef_absolute'; "
-                "delta conversion is performed online by the dataset adapter."
-            )
         image_keys = set(metadata.get("image_keys", []))
         required_images = {"observation.image", "observation.wrist_image"}
         if not required_images.issubset(image_keys):
@@ -211,9 +236,9 @@ class FlexivSftDataset(torch.utils.data.Dataset):
         future_rows = self._dataset[[start + int(offset) for offset in future]]
         row = self._dataset[index]
 
-        measured_tcp = np.asarray(row["observation.eef_state"], dtype=np.float64)
-        absolute_actions = np.asarray(future_rows["action"], dtype=np.float64)
-        actions = absolute_tcp_chunk_to_control_delta(measured_tcp, absolute_actions)
+        actions = np.asarray(future_rows["action"], dtype=np.float64)
+        if actions.shape != (self._action_horizon, 8) or not np.isfinite(actions).all():
+            raise ValueError("Flexiv joint actions must be finite with shape [H, 8].")
         state = np.concatenate(
             (
                 np.asarray(row["observation.joint_state"], dtype=np.float32),

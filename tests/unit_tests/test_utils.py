@@ -34,6 +34,36 @@ from rlinf.runners.reasoning_runner import ReasoningRunner
 from rlinf.utils.metric_utils import compute_evaluate_metrics, compute_rollout_metrics
 
 
+def test_fsdp_cosine_scheduler_preserves_configured_minimum_lr():
+    from rlinf.hybrid_engines.fsdp.fsdp_model_manager import FSDPModelManager
+
+    config = OmegaConf.create(
+        {
+            "optim": {
+                "lr": 1e-5,
+                "adam_beta1": 0.9,
+                "adam_beta2": 0.95,
+                "lr_scheduler": "cosine",
+                "lr_warmup_steps": 10,
+                "total_training_steps": 100,
+                "min_lr": 2.5e-6,
+            },
+            "fsdp_config": {"sharding_strategy": "full_shard"},
+        }
+    )
+    manager = SimpleNamespace(_cfg=config, store_requires_grad_param_name=[])
+    model = torch.nn.Linear(2, 1)
+    optimizer = FSDPModelManager.build_optimizer(manager, model)
+    scheduler = FSDPModelManager.build_lr_scheduler(manager, optimizer, config.optim)
+    learning_rates = []
+    for _ in range(100):
+        optimizer.step()
+        scheduler.step()
+        learning_rates.append(optimizer.param_groups[0]["lr"])
+    assert learning_rates[9] == pytest.approx(1e-5)
+    assert learning_rates[-1] == pytest.approx(2.5e-6)
+
+
 def test_compute_evaluate_metrics_reports_interact_delay_wait_time_stats():
     metrics = compute_evaluate_metrics(
         [

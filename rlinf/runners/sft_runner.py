@@ -135,6 +135,14 @@ class SFTRunner:
             self.metric_logger.log(time_metrics, _step)
             self.metric_logger.log(training_metrics, _step)
 
+            loss = training_metrics.get("train/loss")
+            if loss is not None:
+                logger.info(
+                    "Training step %d: train/loss=%.6f",
+                    self.global_step,
+                    loss,
+                )
+
             logging_metrics = time_metrics
             logging_metrics.update(training_metrics)
 

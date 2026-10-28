@@ -3,8 +3,8 @@
 
 """Compute OpenPI statistics for compact single-arm Flexiv demonstrations.
 
-The script applies the same current-pose-relative TCP-control-frame delta
-conversion and terminal action-chunk padding as the Flexiv SFT dataset adapter.
+The script builds absolute joint-position action chunks from future recorded
+observations, with the same terminal padding as the Flexiv SFT dataset adapter.
 It reads only numeric Parquet columns and never rewrites the source recordings.
 """
 
@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 
 from rlinf.data.datasets.openpi_rlinf.flexiv.flexiv_sft_dataset import (
-    absolute_tcp_chunk_to_control_delta,
+    future_action_chunks,
     future_action_indices,
 )
 
@@ -32,10 +32,8 @@ def read_metadata(dataset: Path) -> dict:
     if len(metadata.get("recorded_arm_names", [])) != 1:
         raise ValueError("Statistics require a single recorded arm.")
     expected = {
-        "observation.eef_state": [6],
         "observation.joint_state": [7],
-        "observation.gripper_state": [1],
-        "action": [7],
+        "action": [8],
     }
     for key, shape in expected.items():
         if metadata.get("features", {}).get(key, {}).get("shape") != shape:
@@ -48,40 +46,27 @@ def iter_numeric_batches(
     *,
     batch_size: int = 4096,
     action_horizon: int = 32,
-    model_action_dim: int = 32,
+    model_action_dim: int = 8,
 ) -> Iterator[dict[str, np.ndarray]]:
-    """Yield 8D states and transformed 7D action chunks for every frame.
-
-    Gripper values remain in the dataset's physical width units for both state
-    and action. Statistical normalization must not silently change that coding.
-    """
+    """Yield 8D joint-plus-gripper states and absolute 8D action chunks."""
     import pyarrow.parquet as pq
 
     if batch_size <= 0:
         raise ValueError("batch_size must be positive.")
-    if model_action_dim < 7:
-        raise ValueError("model_action_dim must be at least the physical 7D action.")
-    metadata = read_metadata(dataset)
-    if metadata.get("action_representation") != "eef_absolute":
-        raise ValueError(
-            "Flexiv statistics expect absolute TCP source targets so the same "
-            "training-time delta conversion can be applied."
-        )
+    if model_action_dim != 8:
+        raise ValueError("Flexiv norm stats must use the physical 8D dimension.")
+    read_metadata(dataset)
     paths = sorted((dataset / "data").rglob("*.parquet"))
     if not paths:
         raise FileNotFoundError(f"No Parquet episodes found under {dataset / 'data'}.")
-    columns = [
-        "observation.eef_state",
-        "observation.joint_state",
-        "observation.gripper_state",
-        "action",
-    ]
+    columns = ["observation.joint_state", "action"]
+    columns.insert(1, "observation.gripper_state")
     for path in paths:
         table = pq.read_table(path, columns=columns)
         values = {
             key: np.asarray(table[key].to_pylist(), dtype=np.float64) for key in columns
         }
-        for key, width in zip(columns, (6, 7, 1, 7), strict=True):
+        for key, width in zip(columns, (7, 1, 8), strict=True):
             if (
                 values[key].shape != (table.num_rows, width)
                 or not np.isfinite(values[key]).all()
@@ -92,21 +77,17 @@ def iter_numeric_batches(
         chunk_indices = future_action_indices(table.num_rows, action_horizon)
         for start in range(0, table.num_rows, batch_size):
             stop = min(start + batch_size, table.num_rows)
-            actions = values["action"][chunk_indices[start:stop]]
-            measured_tcp = values["observation.eef_state"][start:stop, None, :]
-            delta_actions = absolute_tcp_chunk_to_control_delta(measured_tcp, actions)
-            padded_actions = np.zeros(
-                (stop - start, action_horizon, model_action_dim), dtype=np.float64
-            )
-            padded_actions[..., :7] = delta_actions
-            yield {
-                "state": np.concatenate(
-                    (
-                        values["observation.joint_state"][start:stop],
-                        values["observation.gripper_state"][start:stop],
-                    ),
-                    axis=-1,
+            action_chunks = future_action_chunks(values["action"], chunk_indices[start:stop])
+            padded_actions = action_chunks
+            padded_state = np.concatenate(
+                (
+                    values["observation.joint_state"][start:stop],
+                    values["observation.gripper_state"][start:stop],
                 ),
+                axis=-1,
+            )
+            yield {
+                "state": padded_state,
                 "actions": padded_actions,
             }
 
@@ -117,7 +98,7 @@ def compute_stats(
     *,
     batch_size: int = 4096,
     action_horizon: int = 32,
-    model_action_dim: int = 32,
+    model_action_dim: int = 8,
 ) -> None:
     """Save the same norm_stats.json structure consumed by OpenPI transforms."""
     batches = iter_numeric_batches(
@@ -161,7 +142,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--batch-size", type=int, default=4096)
     parser.add_argument("--action-horizon", type=int, default=32)
-    parser.add_argument("--model-action-dim", type=int, default=32)
+    parser.add_argument("--model-action-dim", type=int, default=8)
     parser.add_argument(
         "--inspect",
         action="store_true",
@@ -175,8 +156,8 @@ def main() -> None:
                 {
                     "dataset": str(args.dataset),
                     "state_dim": 8,
-                    "action_dim": 7,
-                    "action_representation": metadata["action_representation"],
+                    "action_dim": 8,
+                    "action_representation": "joint_absolute",
                     "frames": metadata["total_frames"],
                     "episodes": metadata["total_episodes"],
                 },

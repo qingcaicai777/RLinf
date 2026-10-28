@@ -356,7 +356,7 @@ def test_online_action_projection_uses_physical_limits():
     assert actions.grad is not None
 
 
-def test_flexiv_norm_batches_apply_training_delta_and_preserve_gripper(tmp_path):
+def test_flexiv_norm_batches_use_future_absolute_actions(tmp_path):
     import numpy as np
     import pyarrow as pa
     import pyarrow.parquet as pq
@@ -367,13 +367,11 @@ def test_flexiv_norm_batches_apply_training_delta_and_preserve_gripper(tmp_path)
     (tmp_path / "data").mkdir()
     metadata = {
         "recorded_arm_names": ["left"],
-        "action_representation": "eef_absolute",
         "total_frames": 3,
         "features": {
-            "observation.eef_state": {"shape": [6]},
             "observation.joint_state": {"shape": [7]},
             "observation.gripper_state": {"shape": [1]},
-            "action": {"shape": [7]},
+            "action": {"shape": [8]},
         },
     }
     info = tmp_path / "meta" / "info.json"
@@ -381,17 +379,16 @@ def test_flexiv_norm_batches_apply_training_delta_and_preserve_gripper(tmp_path)
     pq.write_table(
         pa.table(
             {
-                "observation.eef_state": [
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [2.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                "observation.joint_state": [
+                    [0.0] * 7,
+                    [1.0] * 7,
+                    [2.0] * 7,
                 ],
-                "observation.joint_state": [[0.0] * 7] * 3,
-                "observation.gripper_state": [[0.060]] * 3,
+                "observation.gripper_state": [[0.060], [0.004], [0.005]],
                 "action": [
-                    [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.003],
-                    [2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.004],
-                    [3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.005],
+                    [0.0] * 7 + [0.060],
+                    [1.0] * 7 + [0.004],
+                    [2.0] * 7 + [0.005],
                 ],
             }
         ),
@@ -400,17 +397,13 @@ def test_flexiv_norm_batches_apply_training_delta_and_preserve_gripper(tmp_path)
     batches = list(iter_numeric_batches(tmp_path, batch_size=2, action_horizon=2))
     assert [len(batch["state"]) for batch in batches] == [2, 1]
     assert batches[0]["state"].shape == (2, 8)
-    assert batches[0]["actions"].shape == (2, 2, 32)
-    assert batches[0]["state"][0, -1] == 0.060
-    assert batches[0]["actions"][0, 0, 6] == 0.003
-    np.testing.assert_allclose(batches[0]["actions"][:, :, 0], [[1.0, 2.0], [1.0, 2.0]])
-    np.testing.assert_allclose(batches[1]["actions"][:, :, 0], [[1.0, 1.0]])
-    np.testing.assert_allclose(batches[0]["actions"][..., 7:], 0.0)
-
-    metadata["action_representation"] = "eef_delta"
-    info.write_text(json.dumps(metadata))
-    with pytest.raises(ValueError, match="absolute TCP source"):
-        list(iter_numeric_batches(tmp_path))
+    assert batches[0]["state"][0, 7] == 0.060
+    assert batches[0]["actions"].shape == (2, 2, 8)
+    np.testing.assert_allclose(batches[0]["actions"][:, :, 0], [[0.0, 1.0], [1.0, 2.0]])
+    np.testing.assert_allclose(batches[1]["actions"][:, :, 0], [[2.0, 2.0]])
+    np.testing.assert_allclose(
+        batches[0]["actions"][:, :, 7], [[0.060, 0.004], [0.004, 0.005]]
+    )
 
 
 def test_flexiv_tcp_delta_is_world_frame_and_keeps_absolute_gripper():

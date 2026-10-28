@@ -55,6 +55,43 @@ from rlinf.utils.env_helpers.delay_sampler import (
 )
 
 
+@pytest.mark.parametrize("explicit_generator", [False, True])
+def test_openpi_training_augmentation_is_random_and_reproducible(explicit_generator):
+    from rlinf.models.embodiment.openpi_rlinf.modules.model import (
+        IMAGE_KEYS,
+        Observation,
+        preprocess_observation,
+    )
+
+    image = torch.linspace(-0.8, 0.8, 32 * 32 * 3).reshape(1, 32, 32, 3)
+    observation = Observation(
+        images={key: image.clone() for key in IMAGE_KEYS},
+        image_masks={key: torch.ones(1, dtype=torch.bool) for key in IMAGE_KEYS},
+        state=torch.zeros(1, 32),
+    )
+
+    def augment(seed):
+        with torch.random.fork_rng(devices=[]):
+            torch.manual_seed(seed)
+            generator = (
+                torch.Generator().manual_seed(seed) if explicit_generator else None
+            )
+            return preprocess_observation(
+                observation, train=True, image_resolution=(32, 32), rng=generator
+            )
+
+    first, repeated, different = augment(10), augment(10), augment(20)
+    for key in IMAGE_KEYS:
+        torch.testing.assert_close(first.images[key], repeated.images[key])
+        assert not torch.equal(first.images[key], different.images[key])
+        assert not torch.equal(first.images[key], image)
+    evaluated = preprocess_observation(
+        observation, train=False, image_resolution=(32, 32)
+    )
+    for key in IMAGE_KEYS:
+        torch.testing.assert_close(evaluated.images[key], image)
+
+
 class _DummyModel:
     def __init__(self):
         self.device = None

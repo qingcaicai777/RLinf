@@ -25,12 +25,12 @@ runner:
   max_epochs: -1
   max_steps: 20000
   val_check_interval: -1
-  save_interval: 5000
+  save_interval: 2000
 
 data:
-  # The loader keeps the source immutable and converts each absolute TCP target
-  # to a current-measured-pose-relative world delta before OpenPI normalization.
-  train_data_paths: "/home/mayiqi/projects/data/peg_insertion_ok"
+  # The loader keeps the source immutable and builds each target from future
+  # recorded absolute joint positions and gripper states.
+  train_data_paths: "/home/mayiqi/projects/data/peg_insertion_joint_absolute_1008"
   num_workers: 4
 
 actor:
@@ -47,23 +47,23 @@ actor:
     # Train the full 32-step flow-matching horizon. Deployment keeps only the
     # first 12 actions for the residual controller and discards the final 20.
     num_action_chunks: 32
-    action_dim: 7
+    action_dim: 8
     add_value_head: false
     num_steps: 4
     precision: null
     openpi_data:
-      repo_id: "flexiv_online_residual"
+      repo_id: "flexiv_joint"
       # Generate this file with calculate_flexiv_norm_stats.py. It must describe
-      # the same 32-step transformed action chunks used by this loader.
-      norm_stats_path: "/home/mayiqi/projects/RLinf/experiments/flexiv_stage1/flexiv_delta_assets/norm_stats.json"
+      # the same 32-step absolute joint action chunks used by this loader.
+      norm_stats_path: "/home/mayiqi/projects/RLinf/experiments/flexiv_stage1/peg_insertion_joint_absolute_1008_v4/norm_stats.json"
     openpi:
       task: sft
-      config_name: "pi05_flexiv_online_residual"
+      config_name: "pi05_flexiv_joint"
       num_images_in_input: 2
       train_expert_only: false
       action_horizon: 32
       action_chunk: 32
-      action_env_dim: 7
+      action_env_dim: 8
       num_steps: 4
       model_action_dim: 32
       paligemma_variant: "gemma_2b"

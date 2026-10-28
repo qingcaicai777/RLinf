@@ -536,6 +536,8 @@ class FSDPModelManager:
         Returns:
             Optimizer: The constructed optimizer.
         """
+        # Schedulers use optimizer.defaults["lr"] to convert an absolute
+        # minimum learning rate into a multiplier for the parameter groups.
         betas = (self._cfg.optim.adam_beta1, self._cfg.optim.adam_beta2)
         adam_eps = self._cfg.optim.get("adam_eps", 1e-8)
         weight_decay = self._cfg.optim.get("weight_decay", 1e-2)
@@ -616,6 +618,7 @@ class FSDPModelManager:
         try:
             optimizer = torch.optim.AdamW(
                 param_groups,
+                lr=self._cfg.optim.lr,
                 eps=adam_eps,
                 weight_decay=weight_decay,
                 fused=use_fused_adamw,
@@ -623,6 +626,7 @@ class FSDPModelManager:
         except (RuntimeError, TypeError):
             optimizer = torch.optim.AdamW(
                 param_groups,
+                lr=self._cfg.optim.lr,
                 eps=adam_eps,
                 weight_decay=weight_decay,
             )
